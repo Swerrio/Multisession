@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "multisession",
+  "version": "${version}",
+  "name": "Multisession",
+  "description": "Stay connected to several servers from one game window and switch between them.",
+  "authors": [
+    "Swerrio"
+  ],
+  "contact": {
+    "sources": "https://github.com/Swerrio/Multisession"
+  },
+  "license": "MIT",
+  "icon": "assets/multisession/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.swerr.multisession.client.MultisessionClient"
+    ]
+  },
+  "mixins": [
+    "multisession.mixins.json",
+    "multisession.compat.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": ">=0.156.0",
+    "java": ">=25",
+    "minecraft": "~26.2"
+  }
+}

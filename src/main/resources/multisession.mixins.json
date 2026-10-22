@@ -1,0 +1,46 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.swerr.multisession.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "CameraMixin",
+    "ClientChunkCacheStorageMixin",
+    "ClientCommonPacketListenerImplAccessor",
+    "ClientCommonPacketListenerImplMixin",
+    "ClientConfigurationPacketListenerImplMixin",
+    "ClientNetworkingImplAccessor",
+    "ClientNetworkingImplMixin",
+    "ClientPacketListenerMixin",
+    "ConnectionMixin",
+    "DirectoryLockMixin",
+    "DownloadedPackSourceMixin",
+    "FabricEventMixin",
+    "GameRendererMixin",
+    "GuiAccessor",
+    "GuiMixin",
+    "HudAccessor",
+    "IntegratedServerMixin",
+    "JoinMultiplayerScreenAccessor",
+    "LevelExtractorMixin",
+    "LevelSummaryMixin",
+    "ListenerAndPacketAccessor",
+    "MinecraftAccessor",
+    "MinecraftMixin",
+    "MusicManagerMixin",
+    "OptionsAccessor",
+    "PacketProcessorMixin",
+    "ParticleEngineMixin",
+    "RegistryDataCollectorMixin",
+    "RemoteFriendListUpdateHandlerMixin",
+    "ServerPackManagerAccessor",
+    "SoundManagerMixin",
+    "WorldListEntryMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "warp.launch": {
+    "subtitle": "multisession.subtitles.warp.launch",
+    "sounds": [
+      {
+        "name": "multisession:warp/launch",
+        "preload": true
+      }
+    ]
+  },
+  "warp.arrival": {
+    "subtitle": "multisession.subtitles.warp.arrival",
+    "sounds": [
+      {
+        "name": "multisession:warp/arrival",
+        "preload": true
+      }
+    ]
+  }
+}
