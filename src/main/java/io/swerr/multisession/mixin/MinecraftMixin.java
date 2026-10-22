@@ -21,6 +21,11 @@ public abstract class MinecraftMixin {
         SessionManager.tickBackground((Minecraft) (Object) this);
     }
 
+    @Inject(method = "doWorldLoad", at = @At("HEAD"))
+    private void multisession$keepOneWorldOpen(CallbackInfo ci) {
+        SessionManager.closeParkedWorlds((Minecraft) (Object) this);
+    }
+
     @Inject(method = "runTick", at = @At("HEAD"))
     private void multisession$advanceSwitchEffect(boolean advanceGameTime, CallbackInfo ci) {
         SessionWarp.frame((Minecraft) (Object) this);

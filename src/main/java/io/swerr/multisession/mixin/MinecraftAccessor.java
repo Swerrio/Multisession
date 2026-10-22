@@ -1,6 +1,7 @@
 package io.swerr.multisession.mixin;
 
 import com.mojang.authlib.minecraft.UserApiService;
+import com.mojang.blaze3d.platform.SDLEventHandler;
 import com.mojang.authlib.services.ProfileResult;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -30,6 +31,9 @@ public interface MinecraftAccessor {
 
     @Accessor("singleplayerServer")
     @Nullable IntegratedServer multisession$singleplayerServer();
+
+    @Accessor("sdlEventHandler")
+    SDLEventHandler multisession$sdlEventHandler();
 
     @Accessor("singleplayerServer")
     void multisession$setSingleplayerServer(@Nullable IntegratedServer singleplayerServer);
