@@ -79,7 +79,7 @@ public final class RegistryBinding {
     private static long fingerprint(TagNetworkSerialization.NetworkPayload payload) {
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
         try {
-            payload.write(buffer);
+            TagNetworkSerialization.NetworkPayload.STREAM_CODEC.encode(buffer, payload);
             return Hashing.murmur3_128().hashBytes(buffer.array(), buffer.arrayOffset(), buffer.writerIndex()).asLong();
         } finally {
             buffer.release();

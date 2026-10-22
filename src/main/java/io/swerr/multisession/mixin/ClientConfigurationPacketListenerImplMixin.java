@@ -22,7 +22,7 @@ public abstract class ClientConfigurationPacketListenerImplMixin {
                     target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/PacketProcessor;)V",
                     shift = At.Shift.AFTER))
     private void multisession$recordTags(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
-        RegistryBinding.recordTags(this.multisession$connection(), packet.getTags());
+        RegistryBinding.recordTags(this.multisession$connection(), packet.tags());
     }
 
     @Inject(method = "handleConfigurationFinished", at = @At("TAIL"))

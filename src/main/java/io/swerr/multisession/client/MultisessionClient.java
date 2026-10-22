@@ -23,7 +23,6 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 
 public class MultisessionClient implements ClientModInitializer {
 
@@ -37,8 +36,8 @@ public class MultisessionClient implements ClientModInitializer {
 
         nextSession = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "multisession.key.next",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_F6,
+                InputConstants.Type.KEYBOARD,
+                InputConstants.KEY_F6,
                 category));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

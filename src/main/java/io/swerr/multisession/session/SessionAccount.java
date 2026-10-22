@@ -1,7 +1,7 @@
 package io.swerr.multisession.session;
 
 import com.mojang.authlib.minecraft.UserApiService;
-import com.mojang.authlib.yggdrasil.ProfileResult;
+import com.mojang.authlib.services.ProfileResult;
 import io.swerr.multisession.mixin.MinecraftAccessor;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;

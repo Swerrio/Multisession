@@ -1,21 +1,22 @@
 package io.swerr.multisession.client;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.logging.LogUtils;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.CommandEncoder;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.UniformType;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
 import java.util.Optional;
@@ -45,15 +46,6 @@ public final class SessionWarp {
             Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "warp.arrival"));
     private static final int UNIFORM_SIZE = new Std140SizeCalculator()
             .putVec2().putFloat().putFloat().putFloat().putFloat().putFloat().align(16).get();
-    private static final RenderPipeline PIPELINE = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET)
-            .withLocation(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "pipeline/warp"))
-            .withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
-            .withFragmentShader(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "post/warp"))
-            .withBindGroupLayout(BindGroupLayout.builder()
-                    .withSampler("InSampler")
-                    .withUniform("WarpConfig", UniformType.UNIFORM_BUFFER)
-                    .build())
-            .build();
 
     private static LongSupplier clock = System::nanoTime;
     private static Phase phase = Phase.IDLE;
@@ -64,6 +56,7 @@ public final class SessionWarp {
     private static float warp;
     private static float flash;
     private static float fov = 1.0F;
+    private static @Nullable RenderPipeline pipeline;
     private static @Nullable TextureTarget sceneCopy;
     private static @Nullable MappableRingBuffer uniforms;
     private static boolean pipelineFailed;
@@ -163,7 +156,19 @@ public final class SessionWarp {
         if (color == null || colorView == null) {
             return;
         }
-        if (!RenderSystem.getDevice().precompilePipeline(PIPELINE).isValid()) {
+        if (pipeline == null) {
+            pipeline = RenderPipeline.builder(RenderPipelines.POST_PROCESSING_SNIPPET)
+                    .withLocation(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "pipeline/warp"))
+                    .withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+                    .withFragmentShader(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "post/warp"))
+                    .withBindGroupLayout(BindGroupLayout.builder()
+                            .withUniform("InSampler", UniformType.COMBINED_IMAGE_SAMPLER)
+                            .withUniform("WarpConfig", UniformType.UNIFORM_BUFFER)
+                            .build())
+                    .withColorTargetState(ColorTargetState.DEFAULT)
+                    .build();
+        }
+        if (RenderSystem.getCompiledPipelineNullable(pipeline) == null) {
             pipelineFailed = true;
             LOGGER.error("Session switch effect is off: its shader did not compile");
             return;
@@ -172,7 +177,7 @@ public final class SessionWarp {
         int width = color.getWidth(0);
         int height = color.getHeight(0);
         if (sceneCopy == null) {
-            sceneCopy = new TextureTarget("Multisession warp", width, height, false, color.getFormat());
+            sceneCopy = new TextureTarget("Multisession warp", width, height, color.getFormat(), null);
         } else if (sceneCopy.width != width || sceneCopy.height != height) {
             sceneCopy.resize(width, height);
         }
@@ -192,10 +197,10 @@ public final class SessionWarp {
                     .putFloat(phase == Phase.ARRIVAL ? 1.0F : 0.0F);
         }
         try (RenderPass pass = encoder.createRenderPass(() -> "Multisession warp", colorView, Optional.empty())) {
-            pass.setPipeline(PIPELINE);
+            pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("WarpConfig", uniforms.currentBuffer());
-            pass.bindTexture("InSampler", sceneCopy.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+            pass.setUniform("InSampler", sceneCopy.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
             pass.draw(3, 1, 0, 0);
         }
         uniforms.rotate();

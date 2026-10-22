@@ -130,6 +130,9 @@ public final class ClientSession {
 
             phase("entities", level::tickEntities);
             phase("block entities", level::tickBlockEntities);
+            if (!player.isRemoved()) {
+                phase("player sync", player::sendChanges);
+            }
             phase("level", () -> level.tick(() -> true));
             phase("light", level::pollLightUpdates);
             player.connection.send(ServerboundClientTickEndPacket.INSTANCE);
