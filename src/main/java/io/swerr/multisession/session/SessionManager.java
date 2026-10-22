@@ -15,8 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -247,6 +249,36 @@ public final class SessionManager {
         minecraft.gameMode = null;
     }
 
+    public static boolean hasWorld(Minecraft minecraft) {
+        if (minecraft.getSingleplayerServer() != null) {
+            return true;
+        }
+        for (ClientSession session : PARKED.values()) {
+            if (session.context.singleplayerServer != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void closeParkedWorlds(Minecraft minecraft) {
+        for (ClientSession session : List.copyOf(PARKED.values())) {
+            IntegratedServer server = session.context.singleplayerServer;
+            if (server == null) {
+                continue;
+            }
+            LOGGER.info("Saving and closing background world {} before another world starts", session.name());
+            close(minecraft, session);
+            minecraft.gui.setScreen(new GenericMessageScreen(Gui.SAVING_LEVEL));
+            waitForShutdown(minecraft, server);
+            SystemToast.add(
+                    minecraft.gui.toastManager(),
+                    SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    Component.translatable("multisession.toast.world_closed", session.name()),
+                    Component.translatable("multisession.toast.world_closed.reason"));
+        }
+    }
+
     public static void shutdown() {
         List<ClientSession> sessions = List.copyOf(PARKED.values());
         PARKED.clear();
@@ -317,6 +349,15 @@ public final class SessionManager {
         while (!server.isPaused() && !server.isShutdown() && System.nanoTime() < deadline) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
         }
+    }
+
+    private static void waitForShutdown(Minecraft minecraft, IntegratedServer server) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+        while (!server.isShutdown() && System.nanoTime() < deadline) {
+            minecraft.renderFrame(false);
+        }
+        STOPPING_SERVERS.remove(server);
+        PAUSED_SERVERS.remove(server);
     }
 
     private static void stopWorld(ClientSession session) {

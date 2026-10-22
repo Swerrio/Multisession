@@ -197,6 +197,9 @@ public class SessionsScreen extends Screen {
                 .build());
         newServer.active = canSwitch;
         newWorld.active = canSwitch;
+        if (SessionManager.hasWorld(this.minecraft)) {
+            newWorld.setTooltip(Tooltip.create(Component.translatable("multisession.screen.new_world.replaces")));
+        }
         content.addChild(newSessions, settings -> settings.paddingTop(8));
         return content;
     }

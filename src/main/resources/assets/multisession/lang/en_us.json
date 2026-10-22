@@ -48,5 +48,8 @@
   "multisession.close.title": "Close session %s?",
   "multisession.close.message": "The session will disconnect. A singleplayer world is saved before it closes.",
   "multisession.option.hideAddresses": "Hide server addresses",
-  "multisession.option.hideAddresses.tooltip": "Hide server IP addresses in the Sessions window, notifications, the address field and the vanilla server list. Handy for streaming."
+  "multisession.option.hideAddresses.tooltip": "Hide server IP addresses in the Sessions window, notifications, the address field and the vanilla server list. Handy for streaming.",
+  "multisession.toast.world_closed": "World %s saved and closed",
+  "multisession.toast.world_closed.reason": "Only one singleplayer world can be open at a time",
+  "multisession.screen.new_world.replaces": "The open singleplayer world will be saved and closed: only one world can be open at a time."
 }

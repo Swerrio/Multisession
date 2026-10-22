@@ -48,5 +48,8 @@
   "multisession.close.title": "Закрыть сессию %s?",
   "multisession.close.message": "Сессия отключится. Одиночный мир перед закрытием сохранится.",
   "multisession.option.hideAddresses": "Скрывать адреса серверов",
-  "multisession.option.hideAddresses.tooltip": "Не показывать IP-адреса серверов в окне сессий, уведомлениях, поле адреса и ванильном списке серверов. Удобно для стримов."
+  "multisession.option.hideAddresses.tooltip": "Не показывать IP-адреса серверов в окне сессий, уведомлениях, поле адреса и ванильном списке серверов. Удобно для стримов.",
+  "multisession.toast.world_closed": "Мир «%s» сохранён и закрыт",
+  "multisession.toast.world_closed.reason": "Одновременно может быть открыт только один одиночный мир",
+  "multisession.screen.new_world.replaces": "Открытый одиночный мир будет сохранён и закрыт: одновременно может быть открыт только один мир."
 }
