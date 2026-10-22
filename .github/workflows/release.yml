@@ -95,7 +95,7 @@ jobs:
       - name: Publish to Modrinth
         uses: Kira-NT/mc-publish@v3
         with:
-          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-id: PC42g0YC
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           files: |
             build/libs/!(*-@(dev|sources|javadoc)).jar
