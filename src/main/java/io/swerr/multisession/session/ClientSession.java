@@ -10,11 +10,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
-import net.minecraft.client.player.ClientInput;
+import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
+import net.minecraft.network.protocol.game.ClientboundResourcePackPacket;
 import net.minecraft.world.entity.Entity;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -32,11 +32,12 @@ public final class ClientSession {
     SessionContext context;
     @Nullable Component disconnectReason;
     boolean closedByUser;
-    @Nullable ClientInput savedInput;
+    @Nullable Input savedInput;
     @Nullable String worldId;
     @Nullable String address;
     private @Nullable Entity camera;
     private @Nullable Screen pendingScreen;
+    private @Nullable ClientboundResourcePackPacket packRequest;
 
     ClientSession(Connection connection, String name, String nickname, SessionContext context) {
         this.connection = connection;
@@ -81,6 +82,16 @@ public final class ClientSession {
         this.pendingScreen = screen;
     }
 
+    public void deferPackRequest(ClientboundResourcePackPacket packet) {
+        this.packRequest = packet;
+    }
+
+    @Nullable ClientboundResourcePackPacket takePackRequest() {
+        ClientboundResourcePackPacket packet = this.packRequest;
+        this.packRequest = null;
+        return packet;
+    }
+
     public void defer(DeferredPacket task) {
         deferredPackets.add(task);
     }
@@ -102,12 +113,11 @@ public final class ClientSession {
             return;
         }
 
-        phase("server packs", () -> context.packs.manager.tick());
 
         LocalPlayer player = minecraft.player;
-        if (player != null && player.input.getClass() != ClientInput.class) {
+        if (player != null && player.input.getClass() != Input.class) {
             savedInput = player.input;
-            player.input = new ClientInput();
+            player.input = new Input();
         }
 
         ClientLevel level = minecraft.level;
@@ -121,7 +131,6 @@ public final class ClientSession {
                 }
             });
         } else {
-            phase("tick rate", () -> level.tickRateManager().tick());
             phase("connection", gameMode::tick);
             if (disconnectReason != null) {
                 return;
@@ -130,7 +139,6 @@ public final class ClientSession {
             phase("entities", level::tickEntities);
             phase("level", () -> level.tick(() -> true));
             phase("light", level::pollLightUpdates);
-            player.connection.send(ServerboundClientTickEndPacket.INSTANCE);
         }
 
         phase("chat", () -> minecraft.getChatListener().tick());

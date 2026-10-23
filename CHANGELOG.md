@@ -1,6 +1,6 @@
 ## 1.0.2
 
-The first release for Minecraft 1.21.4.
+The first release for Minecraft 1.20.1.
 
 * Several servers open in one game window at once, each kept running in the background
 * One singleplayer world alongside them, paused while you are in another session
@@ -8,4 +8,4 @@ The first release for Minecraft 1.21.4.
 * Every session keeps its own chat, HUD, toasts, server resource pack and account
 * Quick join for pinned servers and joining by address
 * Settings for the effect, notifications and hidden server addresses
-* Minecraft 1.21.4, Fabric, client side only
+* Minecraft 1.20.1, Fabric, client side only

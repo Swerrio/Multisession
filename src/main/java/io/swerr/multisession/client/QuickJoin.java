@@ -7,7 +7,7 @@ import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
@@ -55,14 +55,14 @@ public final class QuickJoin {
                 boolean local = minecraft.isLocalServer();
                 minecraft.level.disconnect();
                 if (local) {
-                    minecraft.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+                    minecraft.clearLevel(new GenericDirtMessageScreen(Component.translatable("menu.savingLevel")));
                 } else {
-                    minecraft.disconnect();
+                    minecraft.clearLevel();
                 }
             }
         }
         ServerData data = serverData(minecraft, name, address);
-        ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data, false, null);
+        ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data, false);
     }
 
     public static @Nullable String activeAddress(Minecraft minecraft) {
@@ -99,6 +99,6 @@ public final class QuickJoin {
                 return data;
             }
         }
-        return new ServerData(name, address.trim(), ServerData.Type.OTHER);
+        return new ServerData(name, address.trim(), false);
     }
 }

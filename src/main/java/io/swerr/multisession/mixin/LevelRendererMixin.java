@@ -17,11 +17,8 @@ public abstract class LevelRendererMixin {
                     "setBlockDirty(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/state/BlockState;)V",
                     "setBlocksDirty(IIIIII)V",
                     "setSectionDirtyWithNeighbors(III)V",
-                    "setSectionRangeDirty(IIIIII)V",
                     "setSectionDirty(III)V",
-                    "setSectionDirty(IIIZ)V",
-                    "onChunkReadyToRender(Lnet/minecraft/world/level/ChunkPos;)V",
-                    "onSectionBecomingNonEmpty(J)V"
+                    "setSectionDirty(IIIZ)V"
             },
             at = @At("HEAD"),
             cancellable = true)

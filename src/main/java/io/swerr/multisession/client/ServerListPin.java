@@ -34,7 +34,7 @@ public final class ServerListPin {
                 : hovered ? UNPINNED_HOVER_COLOR : UNPINNED_COLOR;
         graphics.drawString(font, star, x, y, color);
         if (hovered && Minecraft.getInstance().screen != null) {
-            Minecraft.getInstance().screen.setTooltipForNextRenderPass(pinned ? UNPIN : PIN);
+            Minecraft.getInstance().screen.setTooltipForNextRenderPass(font.split(pinned ? UNPIN : PIN, 200));
         }
     }
 

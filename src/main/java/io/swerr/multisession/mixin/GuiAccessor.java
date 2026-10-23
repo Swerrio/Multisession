@@ -10,11 +10,11 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Gui.class)
 public interface GuiAccessor {
 
-    @Accessor("debugOverlay")
+    @Accessor("debugScreen")
     DebugScreenOverlay multisession$debugOverlay();
 
     @Mutable
-    @Accessor("debugOverlay")
+    @Accessor("debugScreen")
     void multisession$setDebugOverlay(DebugScreenOverlay debugOverlay);
 
     @Accessor("subtitleOverlay")

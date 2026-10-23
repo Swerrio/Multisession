@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
@@ -39,6 +40,8 @@ public class MultisessionClient implements ClientModInitializer {
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_F6,
                 "key.category.multisession.main"));
+
+        CoreShaderRegistrationCallback.EVENT.register(SessionWarp::registerShader);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (nextSession.consumeClick()) {
@@ -77,7 +80,7 @@ public class MultisessionClient implements ClientModInitializer {
             if (blocker == null) {
                 return;
             }
-            int next = blocker.getRight() + 4;
+            int next = blocker.getX() + blocker.getWidth() + 4;
             if (next + widget.getWidth() > screen.width) {
                 break;
             }
@@ -89,8 +92,8 @@ public class MultisessionClient implements ClientModInitializer {
     private static @Nullable AbstractWidget blocker(Screen screen, AbstractWidget widget) {
         for (GuiEventListener child : screen.children()) {
             if (child != widget && child instanceof AbstractWidget other && other.visible
-                    && other.getX() < widget.getRight() && widget.getX() < other.getRight()
-                    && other.getY() < widget.getBottom() && widget.getY() < other.getBottom()) {
+                    && other.getX() < widget.getX() + widget.getWidth() && widget.getX() < other.getX() + other.getWidth()
+                    && other.getY() < widget.getY() + widget.getHeight() && widget.getY() < other.getY() + other.getHeight()) {
                 return other;
             }
         }

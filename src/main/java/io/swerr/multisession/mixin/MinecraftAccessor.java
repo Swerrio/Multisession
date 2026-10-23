@@ -1,12 +1,12 @@
 package io.swerr.multisession.mixin;
 
 import com.mojang.authlib.minecraft.UserApiService;
-import com.mojang.authlib.yggdrasil.ProfileResult;
+import com.mojang.authlib.properties.PropertyMap;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.components.toasts.ToastManager;
+import net.minecraft.client.gui.components.toasts.ToastComponent;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
@@ -35,8 +35,8 @@ public interface MinecraftAccessor {
     void multisession$setGui(Gui gui);
 
     @Mutable
-    @Accessor("toastManager")
-    void multisession$setToastManager(ToastManager toastManager);
+    @Accessor("toast")
+    void multisession$setToastManager(ToastComponent toasts);
 
     @Mutable
     @Accessor("chatListener")
@@ -78,19 +78,12 @@ public interface MinecraftAccessor {
     @Accessor("minecraftSessionService")
     void multisession$setSessionService(MinecraftSessionService sessionService);
 
-    @Accessor("profileFuture")
-    CompletableFuture<@Nullable ProfileResult> multisession$profileFuture();
+    @Accessor("profileProperties")
+    PropertyMap multisession$profileProperties();
 
     @Mutable
-    @Accessor("profileFuture")
-    void multisession$setProfileFuture(CompletableFuture<@Nullable ProfileResult> profileFuture);
-
-    @Accessor("userPropertiesFuture")
-    CompletableFuture<UserApiService.UserProperties> multisession$userPropertiesFuture();
-
-    @Mutable
-    @Accessor("userPropertiesFuture")
-    void multisession$setUserPropertiesFuture(CompletableFuture<UserApiService.UserProperties> userPropertiesFuture);
+    @Accessor("profileProperties")
+    void multisession$setProfileProperties(PropertyMap profileProperties);
 
     @Accessor("playerSocialManager")
     PlayerSocialManager multisession$playerSocialManager();

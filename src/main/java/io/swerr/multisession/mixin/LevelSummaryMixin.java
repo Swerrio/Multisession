@@ -12,10 +12,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LevelSummary.class)
 public abstract class LevelSummaryMixin {
 
-    @Inject(method = "primaryActionActive", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "isDisabled", at = @At("HEAD"), cancellable = true)
     private void multisession$playParkedWorld(CallbackInfoReturnable<Boolean> cir) {
         if (SessionManager.parkedWorld(((LevelSummary) (Object) this).getLevelId()) != null) {
-            cir.setReturnValue(true);
+            cir.setReturnValue(false);
         }
     }
 

@@ -1,6 +1,7 @@
 {
-    "vertex": "minecraft:core/blit_screen",
-    "fragment": "multisession:core/warp",
+    "vertex": "multisession:warp",
+    "fragment": "multisession:warp",
+    "attributes": [ "Position" ],
     "samplers": [
         { "name": "InSampler" }
     ],

@@ -3,15 +3,17 @@ package io.swerr.multisession.session;
 import com.google.common.hash.Hashing;
 import io.netty.buffer.Unpooled;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistrySynchronization;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
 import net.minecraft.tags.TagNetworkSerialization;
 
 public final class RegistryBinding {
@@ -24,7 +26,7 @@ public final class RegistryBinding {
     public static void recordTags(Connection connection, Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> tags) {
         ConnectionTags record = (ConnectionTags) connection;
         tags.forEach((key, payload) -> {
-            if (!RegistrySynchronization.isNetworkable(key)) {
+            if (BuiltInRegistries.REGISTRY.containsKey(key.location())) {
                 record.multisession$tags().put(key, payload);
                 record.multisession$fingerprints().put(key, fingerprint(payload));
             }
@@ -39,7 +41,7 @@ public final class RegistryBinding {
         ConnectionTags record = (ConnectionTags) listener.getConnection();
         record.multisession$fingerprints().forEach((key, fingerprint) -> {
             if (!Objects.equals(BOUND_TAGS.get(key), fingerprint)) {
-                Registry<?> registry = BuiltInRegistries.REGISTRY.getValue(key.location());
+                Registry<?> registry = BuiltInRegistries.REGISTRY.get(key.location());
                 if (registry != null) {
                     applyTags(registry, record.multisession$tags().get(key));
                     BOUND_TAGS.put(key, fingerprint);
@@ -49,7 +51,9 @@ public final class RegistryBinding {
     }
 
     private static <T> void applyTags(Registry<T> registry, TagNetworkSerialization.NetworkPayload payload) {
-        registry.prepareTagReload(payload.resolve(registry)).apply();
+        Map<TagKey<T>, List<Holder<T>>> tags = new HashMap<>();
+        TagNetworkSerialization.deserializeTagsFromNetwork(registry.key(), registry, payload, tags::put);
+        registry.bindTags(tags);
     }
 
     private static long fingerprint(TagNetworkSerialization.NetworkPayload payload) {

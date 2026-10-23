@@ -15,9 +15,9 @@ import io.swerr.multisession.session.SessionManager;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.ShaderDefines;
-import net.minecraft.client.renderer.ShaderProgram;
+import java.io.IOException;
+import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -34,11 +34,9 @@ public final class SessionWarp {
     private static final float PEAK_FOV = 1.6F;
     private static final float MAX_FOV = 150.0F;
     private static final SoundEvent LAUNCH_SOUND = SoundEvent.createVariableRangeEvent(
-            ResourceLocation.fromNamespaceAndPath(MultisessionClient.MOD_ID, "warp.launch"));
+            new ResourceLocation(MultisessionClient.MOD_ID, "warp.launch"));
     private static final SoundEvent ARRIVAL_SOUND = SoundEvent.createVariableRangeEvent(
-            ResourceLocation.fromNamespaceAndPath(MultisessionClient.MOD_ID, "warp.arrival"));
-    private static final ShaderProgram PROGRAM = new ShaderProgram(
-            ResourceLocation.fromNamespaceAndPath(MultisessionClient.MOD_ID, "core/warp"), DefaultVertexFormat.BLIT_SCREEN, ShaderDefines.EMPTY);
+            new ResourceLocation(MultisessionClient.MOD_ID, "warp.arrival"));
 
     private static LongSupplier clock = System::nanoTime;
     private static Phase phase = Phase.IDLE;
@@ -51,6 +49,7 @@ public final class SessionWarp {
     private static float fov = 1.0F;
     private static @Nullable TextureTarget sceneCopy;
     private static boolean pipelineFailed;
+    private static @Nullable ShaderInstance shader;
     private static final int GL_READ_FRAMEBUFFER = 0x8CA8;
     private static final int GL_DRAW_FRAMEBUFFER = 0x8CA9;
     private static final int GL_COLOR_BUFFER_BIT = 0x4000;
@@ -142,23 +141,27 @@ public final class SessionWarp {
         return Math.min(scaled, Math.max(baseFov, MAX_FOV));
     }
 
+    public static void registerShader(CoreShaderRegistrationCallback.RegistrationContext context) throws IOException {
+        context.register(new ResourceLocation(MultisessionClient.MOD_ID, "warp"), DefaultVertexFormat.POSITION, loaded -> shader = loaded);
+    }
+
     public static void render(Minecraft minecraft, RenderTarget mainTarget) {
         if (phase == Phase.IDLE || pipelineFailed) {
             return;
         }
-        CompiledShaderProgram shader = RenderSystem.setShader(PROGRAM);
-        if (shader == null) {
+        ShaderInstance program = shader;
+        if (program == null) {
             pipelineFailed = true;
-            LOGGER.error("Session switch effect is off: its shader did not compile");
+            LOGGER.error("Session switch effect is off: its shader did not load");
             return;
         }
 
         int width = mainTarget.width;
         int height = mainTarget.height;
         if (sceneCopy == null) {
-            sceneCopy = new TextureTarget(width, height, false);
+            sceneCopy = new TextureTarget(width, height, false, Minecraft.ON_OSX);
         } else if (sceneCopy.width != width || sceneCopy.height != height) {
-            sceneCopy.resize(width, height);
+            sceneCopy.resize(width, height, Minecraft.ON_OSX);
         }
 
         GlStateManager._glBindFramebuffer(GL_READ_FRAMEBUFFER, mainTarget.frameBufferId);
@@ -166,22 +169,24 @@ public final class SessionWarp {
         GlStateManager._glBlitFrameBuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
         mainTarget.bindWrite(true);
 
-        shader.bindSampler("InSampler", sceneCopy.getColorTextureId());
-        shader.safeGetUniform("OutSize").set((float) width, (float) height);
-        shader.safeGetUniform("Travel").set(travel);
-        shader.safeGetUniform("Warp").set(warp);
-        shader.safeGetUniform("Flash").set(flash);
-        shader.safeGetUniform("Distortion").set(minecraft.options.screenEffectScale().get().floatValue());
-        shader.safeGetUniform("Arrival").set(phase == Phase.ARRIVAL ? 1.0F : 0.0F);
+        RenderSystem.setShader(() -> program);
+        program.setSampler("InSampler", sceneCopy.getColorTextureId());
+        program.safeGetUniform("OutSize").set((float) width, (float) height);
+        program.safeGetUniform("Travel").set(travel);
+        program.safeGetUniform("Warp").set(warp);
+        program.safeGetUniform("Flash").set(flash);
+        program.safeGetUniform("Distortion").set(minecraft.options.screenEffectScale().get().floatValue());
+        program.safeGetUniform("Arrival").set(phase == Phase.ARRIVAL ? 1.0F : 0.0F);
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
-        BufferBuilder quad = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-        quad.addVertex(0.0F, 0.0F, 0.0F);
-        quad.addVertex(1.0F, 0.0F, 0.0F);
-        quad.addVertex(1.0F, 1.0F, 0.0F);
-        quad.addVertex(0.0F, 1.0F, 0.0F);
-        BufferUploader.drawWithShader(quad.buildOrThrow());
+        BufferBuilder quad = Tesselator.getInstance().getBuilder();
+        quad.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+        quad.vertex(0.0, 0.0, 0.0).endVertex();
+        quad.vertex(1.0, 0.0, 0.0).endVertex();
+        quad.vertex(1.0, 1.0, 0.0).endVertex();
+        quad.vertex(0.0, 1.0, 0.0).endVertex();
+        BufferUploader.drawWithShader(quad.end());
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
     }

@@ -4,7 +4,6 @@ import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.server.IntegratedServer;
@@ -43,7 +42,7 @@ public abstract class MinecraftMixin {
     }
 
     @Inject(method = "setLevel", at = @At("HEAD"), cancellable = true)
-    private void multisession$setBackgroundLevel(ClientLevel level, ReceivingLevelScreen.Reason reason, CallbackInfo ci) {
+    private void multisession$setBackgroundLevel(ClientLevel level, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             ((Minecraft) (Object) this).level = level;
             ci.cancel();
@@ -92,25 +91,10 @@ public abstract class MinecraftMixin {
         }
     }
 
-    @Inject(method = "clearClientLevel", at = @At("HEAD"), cancellable = true)
-    private void multisession$reconfigureInBackground(Screen screen, CallbackInfo ci) {
-        if (SessionManager.inBackground()) {
-            SessionManager.onBackgroundReconfigure((Minecraft) (Object) this, screen);
-            ci.cancel();
-        }
-    }
-
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V", at = @At("HEAD"), cancellable = true)
-    private void multisession$disconnectInBackground(Screen screen, boolean keepResourcePacks, CallbackInfo ci) {
+    @Inject(method = "clearLevel(Lnet/minecraft/client/gui/screens/Screen;)V", at = @At("HEAD"), cancellable = true)
+    private void multisession$disconnectInBackground(Screen screen, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             SessionManager.onBackgroundDisconnect();
-            ci.cancel();
-        }
-    }
-
-    @Inject(method = "clearDownloadedResourcePacks", at = @At("HEAD"), cancellable = true)
-    private void multisession$keepActiveResourcePacks(CallbackInfo ci) {
-        if (SessionManager.inBackground()) {
             ci.cancel();
         }
     }

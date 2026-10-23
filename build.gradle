@@ -34,23 +34,29 @@ dependencies {
     }
 }
 
-fabricApi {
-    configureTests {
-        createSourceSet = true
-        modId = "multisession-test"
-        enableGameTests = false
-        enableClientGameTests = true
-        eula = false
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
     }
 }
 
 loom {
-    runs.matching { it.name == "clientGameTest" }.configureEach {
-        property "multisession.test.serverJar", file("${gradle.gradleUserHomeDir}/caches/fabric-loom/${project.minecraft_version}/minecraft-server.jar").absolutePath
-        property "fabric.client.gametest.disableNetworkSynchronizer", "true"
-        if (project.hasProperty("memoryBenchmark")) {
-            property "multisession.test.memory", "true"
-            vmArgs "-Xms512m", "-Xmx4096m"
+    mods {
+        "multisession" {
+            sourceSet sourceSets.main
+        }
+        "multisession-test" {
+            sourceSet sourceSets.gametest
+        }
+    }
+    runs {
+        clientGameTest {
+            client()
+            name "Client Smoke Test"
+            source sourceSets.gametest
+            runDir "build/run/clientGameTest"
+            property "multisession.test.serverJar", file("${gradle.gradleUserHomeDir}/caches/fabric-loom/${project.minecraft_version}/minecraft-server.jar").absolutePath
         }
     }
 }
@@ -68,7 +74,7 @@ processResources {
     }
 }
 
-def targetJavaVersion = 21
+def targetJavaVersion = 17
 tasks.withType(JavaCompile).configureEach {
     // ensure that the encoding is set to UTF-8, no matter what the system default is
     // this fixes some edge cases with special characters not displaying correctly

@@ -2,7 +2,7 @@ package io.swerr.multisession.session;
 
 import com.mojang.logging.LogUtils;
 import io.swerr.multisession.client.MultisessionConfig;
-import io.swerr.multisession.mixin.ClientCommonPacketListenerImplAccessor;
+import io.swerr.multisession.mixin.IntegratedServerAccessor;
 import io.swerr.multisession.mixin.MinecraftAccessor;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,20 +16,20 @@ import java.util.concurrent.locks.LockSupport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.ConnectScreen;
-import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.client.player.ClientInput;
+import net.minecraft.client.player.Input;
 import net.minecraft.client.player.KeyboardInput;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundResourcePackPacket;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.HitResult;
@@ -75,19 +75,15 @@ public final class SessionManager {
         return List.copyOf(PARKED.values());
     }
 
-    public static List<PackState> parkedPacks() {
-        return PARKED.values().stream().map(session -> session.context.packs).toList();
-    }
-
     public static @Nullable ClientSession parkedFor(Connection connection) {
         return PARKED.get(connection);
     }
 
     public static @Nullable ClientSession parkedFor(PacketListener listener) {
-        if (PARKED.isEmpty() || !(listener instanceof ClientCommonPacketListenerImpl common)) {
+        if (PARKED.isEmpty() || !(listener instanceof ClientPacketListener play)) {
             return null;
         }
-        return PARKED.get(((ClientCommonPacketListenerImplAccessor) common).multisession$connection());
+        return PARKED.get(play.getConnection());
     }
 
     public static boolean canPark(Minecraft minecraft) {
@@ -120,7 +116,6 @@ public final class SessionManager {
         ClientSession parked = park(minecraft);
         SessionContext fresh = SessionContext.fresh(minecraft);
         fresh.install(minecraft);
-        parked.context.packs.completePendingReload();
         ((MinecraftAccessor) minecraft).multisession$updateLevelInEngines(null);
         if (!((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$keepLoadedPacks(fresh.packs)) {
             minecraft.reloadResourcePacks();
@@ -145,7 +140,6 @@ public final class SessionManager {
         SessionContext context = target.context;
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
         context.install(minecraft);
-        outgoing.packs.completePendingReload();
         minecraft.hitResult = null;
         minecraft.crosshairPickEntity = null;
         if (context.player != null) {
@@ -170,6 +164,10 @@ public final class SessionManager {
         Screen screen = target.pendingScreen();
         target.setPendingScreen(null);
         minecraft.setScreen(screen instanceof LevelLoadingScreen ? null : screen);
+        ClientboundResourcePackPacket packRequest = target.takePackRequest();
+        if (packRequest != null && context.player != null) {
+            context.player.connection.handleResourcePack(packRequest);
+        }
     }
 
     public static void close(Minecraft minecraft, ClientSession session) {
@@ -221,23 +219,6 @@ public final class SessionManager {
         }
     }
 
-    public static void onBackgroundReconfigure(Minecraft minecraft, Screen screen) {
-        ClientSession session = background;
-        if (session == null) {
-            return;
-        }
-
-        ClientPacketListener listener = minecraft.getConnection();
-        if (listener != null) {
-            listener.clearLevel();
-        }
-        session.setPendingScreen(screen);
-        session.setCamera(null);
-        minecraft.level = null;
-        minecraft.player = null;
-        minecraft.gameMode = null;
-    }
-
     public static boolean hasWorld(Minecraft minecraft) {
         if (minecraft.getSingleplayerServer() != null) {
             return true;
@@ -258,11 +239,11 @@ public final class SessionManager {
             }
             LOGGER.info("Saving and closing background world {} before another world starts", session.name());
             close(minecraft, session);
-            minecraft.setScreen(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+            minecraft.setScreen(new GenericDirtMessageScreen(Component.translatable("menu.savingLevel")));
             waitForShutdown(minecraft, server);
             SystemToast.add(
-                    minecraft.getToastManager(),
-                    SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    minecraft.getToasts(),
+                    SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
                     Component.translatable("multisession.toast.world_closed", session.name()),
                     Component.translatable("multisession.toast.world_closed.reason"));
         }
@@ -302,7 +283,7 @@ public final class SessionManager {
                 listener.getConnection(), displayName(listener), listener.getLocalGameProfile().getName(), SessionContext.capture(minecraft));
         session.setCamera(minecraft.getCameraEntity());
         session.savedInput = minecraft.player.input;
-        minecraft.player.input = new ClientInput();
+        minecraft.player.input = new Input();
         IntegratedServer server = session.context.singleplayerServer;
         if (server != null) {
             session.worldId = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName().toString();
@@ -322,7 +303,7 @@ public final class SessionManager {
     private static void pauseWorld(IntegratedServer server) {
         PAUSED_SERVERS.add(server);
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(250);
-        while (!server.isPaused() && !server.isShutdown() && System.nanoTime() < deadline) {
+        while (!((IntegratedServerAccessor) server).multisession$paused() && !server.isShutdown() && System.nanoTime() < deadline) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
         }
     }
@@ -415,8 +396,8 @@ public final class SessionManager {
             LOGGER.info("Background session {} ({}) disconnected: {}", session.name(), session.nickname(), session.disconnectReason.getString());
             if (!session.closedByUser && MultisessionConfig.get(MultisessionConfig.Option.DISCONNECT_TOASTS)) {
                 SystemToast.add(
-                        minecraft.getToastManager(),
-                        SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                        minecraft.getToasts(),
+                        SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
                         Component.translatable("multisession.toast.disconnected", session.label()),
                         session.disconnectReason);
             }

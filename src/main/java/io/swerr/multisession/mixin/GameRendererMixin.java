@@ -3,7 +3,6 @@ package io.swerr.multisession.mixin;
 import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -29,14 +28,14 @@ public abstract class GameRendererMixin {
     }
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    private void multisession$switchEffectFov(Camera camera, float partialTick, boolean useFovSetting, CallbackInfoReturnable<Float> cir) {
+    private void multisession$switchEffectFov(Camera camera, float partialTick, boolean useFovSetting, CallbackInfoReturnable<Double> cir) {
         if (useFovSetting) {
-            cir.setReturnValue(SessionWarp.fov(minecraft, cir.getReturnValueF()));
+            cir.setReturnValue((double) SessionWarp.fov(minecraft, cir.getReturnValue().floatValue()));
         }
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void multisession$renderSwitchEffect(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
+    private void multisession$renderSwitchEffect(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
         SessionWarp.render(minecraft, minecraft.getMainRenderTarget());
     }
 }
