@@ -23,7 +23,12 @@ jobs:
           BRANCHES: |
             [
               {"branch": "master", "mc": "26.3", "java": "25", "games": "26.3"},
-              {"branch": "26.2", "mc": "26.2", "java": "25", "games": "26.2"}
+              {"branch": "26.2", "mc": "26.2", "java": "25", "games": "26.2"},
+              {"branch": "26.1", "mc": "26.1", "java": "25", "games": "26.1\n26.1.1\n26.1.2"},
+              {"branch": "1.21.11", "mc": "1.21.11", "java": "25", "games": "1.21.11"},
+              {"branch": "1.21.4", "mc": "1.21.4", "java": "25", "games": "1.21.4"},
+              {"branch": "1.20.1", "mc": "1.20.1", "java": "25", "games": "1.20.1"},
+              {"branch": "1.19.2", "mc": "1.19.2", "java": "25", "games": "1.19.2"}
             ]
         run: |
           case "$GITHUB_REF_NAME" in
