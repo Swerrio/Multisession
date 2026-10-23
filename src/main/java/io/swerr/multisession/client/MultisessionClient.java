@@ -47,6 +47,7 @@ public class MultisessionClient implements ClientModInitializer {
             while (nextSession.consumeClick()) {
                 SessionWarp.cycle(client);
             }
+            SessionCards.tick(client);
         });
 
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
@@ -102,7 +103,7 @@ public class MultisessionClient implements ClientModInitializer {
 
     private static boolean offersSessions(Minecraft client, Screen screen) {
         if (screen instanceof PauseScreen) {
-            return SessionManager.canPark(client);
+            return SessionManager.canPark(client) || SessionManager.hasParked() || !SessionManager.lost().isEmpty();
         }
         if (screen instanceof TitleScreen && MultisessionConfig.get(MultisessionConfig.Option.TITLE_BUTTON)) {
             return true;

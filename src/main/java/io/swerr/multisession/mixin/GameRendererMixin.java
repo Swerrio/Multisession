@@ -1,6 +1,7 @@
 package io.swerr.multisession.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.swerr.multisession.client.SessionSnapshots;
 import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.DeltaTracker;
@@ -29,6 +30,16 @@ public abstract class GameRendererMixin {
         if (SessionManager.inBackground()) {
             ci.cancel();
         }
+    }
+
+    @Inject(method = "render", at = @At("HEAD"))
+    private void multisession$retireSnapshots(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
+        SessionSnapshots.beginFrame();
+    }
+
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;render()V"))
+    private void multisession$captureSnapshot(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
+        SessionSnapshots.capture(minecraft, mainRenderTarget);
     }
 
     @Inject(method = "render", at = @At("TAIL"))

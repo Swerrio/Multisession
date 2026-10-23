@@ -1,9 +1,11 @@
 package io.swerr.multisession.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
 import java.util.List;
 import java.util.function.Consumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -20,24 +22,21 @@ import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LinearLayout;
-import net.minecraft.client.gui.layouts.SpacerElement;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.RandomSource;
 import org.jspecify.annotations.Nullable;
 
 public class SessionsScreen extends Screen {
@@ -54,6 +53,8 @@ public class SessionsScreen extends Screen {
     private static int lastTab;
 
     private final Screen parent;
+    private final SessionGrid grid;
+    private final RandomSource random = RandomSource.create();
     private HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(widget -> this.addRenderableWidget(widget), widget -> this.removeWidget(widget));
     private @Nullable MenuTabBar tabBar;
@@ -67,6 +68,9 @@ public class SessionsScreen extends Screen {
     public SessionsScreen(Screen parent) {
         super(TITLE);
         this.parent = parent;
+        this.grid = new SessionGrid(Minecraft.getInstance(),
+                () -> this.openNewSession(new JoinMultiplayerScreen(new TitleScreen())),
+                () -> this.openNewSession(new SelectWorldScreen(new TitleScreen())));
     }
 
     @Override
@@ -80,7 +84,7 @@ public class SessionsScreen extends Screen {
         this.layout = new HeaderAndFooterLayout(this);
         this.tabBar = MenuTabBar.builder(this.tabManager, this.width)
                 .addTabs(
-                        new ScrollTab(SESSIONS_TAB, sessionsContent()),
+                        new GridTab(SESSIONS_TAB),
                         new ScrollTab(QUICK_TAB, quickContent()),
                         new ScrollTab(ADDRESS_TAB, addressContent()),
                         new ScrollTab(SETTINGS_TAB, settingsContent()))
@@ -107,6 +111,7 @@ public class SessionsScreen extends Screen {
     @Override
     public void tick() {
         rememberTab();
+        this.grid.tick();
         if (!SessionManager.parked().equals(shownSessions) || !MultisessionConfig.pinned().equals(shownPins)) {
             this.rebuildWidgets();
         }
@@ -115,6 +120,10 @@ public class SessionsScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (this.tabBar != null && this.tabBar.keyPressed(event)) {
+            return true;
+        }
+        if (this.onSessionsTab() && event.key() >= InputConstants.KEY_1 && event.key() <= InputConstants.KEY_9
+                && this.grid.activateNumber(event.key() - InputConstants.KEY_1)) {
             return true;
         }
         if (event.isConfirmation() && this.addressBox != null && this.addressBox.isFocused() && this.connectButton != null && this.connectButton.active) {
@@ -126,8 +135,14 @@ public class SessionsScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        float shake = this.grid.shake();
+        graphics.pose().pushMatrix();
+        if (shake > 0.0F) {
+            graphics.pose().translate((this.random.nextFloat() * 2.0F - 1.0F) * shake, (this.random.nextFloat() * 2.0F - 1.0F) * shake);
+        }
         super.extractRenderState(graphics, mouseX, mouseY, a);
         graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, this.height - this.layout.getFooterHeight(), 0.0F, 0.0F, this.width, 2, 32, 2);
+        graphics.pose().popMatrix();
     }
 
     @Override
@@ -143,65 +158,32 @@ public class SessionsScreen extends Screen {
     }
 
     @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (this.grid.tracksMouse()) {
+            this.setDragging(false);
+            return this.grid.mouseReleased(event);
+        }
+        return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (this.grid.tracksMouse()) {
+            return this.grid.mouseDragged(event, dx, dy);
+        }
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public void removed() {
+        this.grid.stopSounds();
+        super.removed();
+    }
+
+    @Override
     protected void rebuildWidgets() {
         rememberTab();
         super.rebuildWidgets();
-    }
-
-    private LinearLayout sessionsContent() {
-        boolean canSwitch = SessionManager.canSwitch(this.minecraft);
-        LinearLayout content = column();
-
-        LinearLayout current = LinearLayout.horizontal().spacing(4);
-        current.defaultCellSetting().alignVerticallyMiddle();
-        current.addChild(new StringWidget(currentLabel(), this.font));
-        String currentAddress = QuickJoin.activeAddress(this.minecraft);
-        if (currentAddress != null) {
-            ServerData data = this.minecraft.getConnection().getServerData();
-            current.addChild(pinButton(data != null ? data.name : currentAddress, currentAddress));
-        }
-        content.addChild(current, settings -> settings.paddingBottom(4));
-
-        if (shownSessions.isEmpty()) {
-            content.addChild(new StringWidget(Component.translatable("multisession.screen.none"), this.font));
-        }
-        for (ClientSession session : shownSessions) {
-            LinearLayout row = LinearLayout.horizontal().spacing(4);
-            Component label = session.isInWorld()
-                    ? session.label()
-                    : Component.translatable("multisession.screen.loading", session.label());
-            Button open = row.addChild(Button.builder(label, button -> SessionWarp.switchTo(this.minecraft, session))
-                    .width(WIDTH - 2 * (SMALL + 4))
-                    .build());
-            open.active = canSwitch;
-            if (session.address() != null) {
-                row.addChild(pinButton(session.name(), session.address()));
-            } else {
-                row.addChild(SpacerElement.width(SMALL));
-            }
-            row.addChild(Button.builder(Component.literal("✕"), button -> this.closeSession(session))
-                    .width(SMALL)
-                    .tooltip(Tooltip.create(Component.translatable("multisession.screen.close")))
-                    .build());
-            content.addChild(row);
-        }
-
-        LinearLayout newSessions = LinearLayout.horizontal().spacing(4);
-        Button newServer = newSessions.addChild(Button.builder(Component.translatable("multisession.screen.new_server"),
-                        button -> this.openNewSession(new JoinMultiplayerScreen(new TitleScreen())))
-                .width((WIDTH - 4) / 2)
-                .build());
-        Button newWorld = newSessions.addChild(Button.builder(Component.translatable("multisession.screen.new_world"),
-                        button -> this.openNewSession(new SelectWorldScreen(new TitleScreen())))
-                .width((WIDTH - 4) / 2)
-                .build());
-        newServer.active = canSwitch;
-        newWorld.active = canSwitch;
-        if (SessionManager.hasWorld(this.minecraft)) {
-            newWorld.setTooltip(Tooltip.create(Component.translatable("multisession.screen.new_world.replaces")));
-        }
-        content.addChild(newSessions, settings -> settings.paddingTop(8));
-        return content;
     }
 
     private LinearLayout quickContent() {
@@ -291,7 +273,6 @@ public class SessionsScreen extends Screen {
         content.addChild(optionButton(MultisessionConfig.Option.WARP_ANIMATION, CommonComponents.OPTION_ON, CommonComponents.OPTION_OFF));
         content.addChild(optionButton(MultisessionConfig.Option.WARP_SOUND, CommonComponents.OPTION_ON, CommonComponents.OPTION_OFF));
         content.addChild(optionButton(MultisessionConfig.Option.DISCONNECT_TOASTS, CommonComponents.OPTION_ON, CommonComponents.OPTION_OFF));
-        content.addChild(optionButton(MultisessionConfig.Option.CONFIRM_CLOSE, CommonComponents.OPTION_ON, CommonComponents.OPTION_OFF));
         content.addChild(optionButton(MultisessionConfig.Option.NEW_SESSION, CommonComponents.GUI_YES, CommonComponents.GUI_NO));
         content.addChild(optionButton(MultisessionConfig.Option.TITLE_BUTTON,
                 Component.translatable("multisession.option.titleButton.always"),
@@ -315,38 +296,14 @@ public class SessionsScreen extends Screen {
                 });
     }
 
-    private void closeSession(ClientSession session) {
-        if (!MultisessionConfig.get(MultisessionConfig.Option.CONFIRM_CLOSE)) {
-            SessionManager.close(this.minecraft, session);
-            this.rebuildWidgets();
-            return;
-        }
-        this.minecraft.gui.setScreen(new ConfirmScreen(
-                confirmed -> {
-                    if (confirmed) {
-                        SessionManager.close(this.minecraft, session);
-                    }
-                    this.minecraft.gui.setScreen(this);
-                },
-                Component.translatable("multisession.close.title", session.label()),
-                Component.translatable("multisession.close.message")));
-    }
-
-    private Button pinButton(String name, String serverAddress) {
-        boolean pinned = MultisessionConfig.isPinned(serverAddress);
-        return Button.builder(Component.literal(pinned ? "★" : "☆"), button -> {
-                    MultisessionConfig.togglePin(name, serverAddress);
-                    this.rebuildWidgets();
-                })
-                .width(SMALL)
-                .tooltip(Tooltip.create(pinned ? UNPIN : PIN))
-                .build();
-    }
-
     private LinearLayout column() {
         LinearLayout content = LinearLayout.vertical().spacing(4);
         content.defaultCellSetting().alignHorizontallyCenter();
         return content;
+    }
+
+    private boolean onSessionsTab() {
+        return this.tabBar != null && this.tabBar.getTabs().indexOf(this.tabManager.getCurrentTab()) == 0;
     }
 
     private void rememberTab() {
@@ -366,24 +323,39 @@ public class SessionsScreen extends Screen {
         }
     }
 
-    private Component currentLabel() {
-        ClientPacketListener connection = this.minecraft.getConnection();
-        if (connection == null) {
-            return Component.translatable("multisession.screen.current.none");
+    private final class GridTab implements Tab {
+
+        private final Component title;
+        private final FrameLayout layout = new FrameLayout();
+
+        private GridTab(Component title) {
+            this.title = title;
         }
-        ServerData data = connection.getServerData();
-        IntegratedServer server = this.minecraft.getSingleplayerServer();
-        Component name;
-        if (server != null) {
-            name = Component.literal(server.getWorldData().getLevelName());
-        } else if (data != null) {
-            name = MultisessionConfig.displayName(data.name, data.ip);
-        } else {
-            String remote = String.valueOf(connection.getConnection().getRemoteAddress());
-            name = MultisessionConfig.displayName(remote, remote);
+
+        @Override
+        public Component getTabTitle() {
+            return title;
         }
-        Component session = Component.translatable("multisession.session.label", name, connection.getLocalGameProfile().name());
-        return Component.translatable("multisession.screen.current", session);
+
+        @Override
+        public Component getTabExtraNarration() {
+            return Component.empty();
+        }
+
+        @Override
+        public void visitChildren(Consumer<AbstractWidget> consumer) {
+            consumer.accept(SessionsScreen.this.grid);
+        }
+
+        @Override
+        public void doLayout(ScreenRectangle area) {
+            SessionsScreen.this.grid.setRectangle(Math.max(0, area.width() - 24), Math.max(0, area.height() - 16), area.left() + 12, area.top() + 8);
+        }
+
+        @Override
+        public Layout getLayout() {
+            return layout;
+        }
     }
 
     private final class ScrollTab implements Tab {

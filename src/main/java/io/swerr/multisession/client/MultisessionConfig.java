@@ -165,7 +165,6 @@ public final class MultisessionConfig {
         WARP_ANIMATION("warpAnimation", true),
         WARP_SOUND("warpSound", true),
         DISCONNECT_TOASTS("disconnectToasts", true),
-        CONFIRM_CLOSE("confirmClose", true),
         TITLE_BUTTON("titleButton", false),
         NEW_SESSION("newSession", true);
 

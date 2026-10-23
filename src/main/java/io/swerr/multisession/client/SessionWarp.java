@@ -80,7 +80,7 @@ public final class SessionWarp {
     }
 
     public static void cycle(Minecraft minecraft) {
-        ClientSession next = SessionManager.next();
+        ClientSession next = SessionCards.next(minecraft);
         if (next != null) {
             switchTo(minecraft, next);
         }
