@@ -7,7 +7,6 @@ import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundResourcePackPacket;
@@ -69,7 +68,7 @@ public abstract class ClientPacketListenerMixin {
 
     @Inject(method = "updateTagsForRegistry", at = @At("HEAD"), cancellable = true)
     private void multisession$keepGlobalTags(ResourceKey<? extends Registry<?>> key, TagNetworkSerialization.NetworkPayload payload, CallbackInfo ci) {
-        if (SessionManager.protectsGlobalRegistries() && BuiltInRegistries.REGISTRY.containsKey(key.location())) {
+        if (SessionManager.protectsGlobalRegistries() && Registry.REGISTRY.containsKey(key.location())) {
             ci.cancel();
         }
     }

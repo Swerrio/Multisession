@@ -2,7 +2,10 @@ package io.swerr.multisession.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.List;
+import java.util.function.Consumer;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -20,8 +23,8 @@ public final class ServerListPin {
     private ServerListPin() {
     }
 
-    public static void extract(GuiGraphics graphics, Font font, ServerData server, int nameX, int y,
-            int mouseX, int mouseY, boolean active) {
+    public static void extract(PoseStack pose, Font font, ServerData server, int nameX, int y,
+            int mouseX, int mouseY, boolean active, Consumer<List<Component>> tooltip) {
         boolean pinned = MultisessionConfig.isPinned(server.ip);
         if (!pinned && !active) {
             return;
@@ -32,9 +35,9 @@ public final class ServerListPin {
         int color = pinned
                 ? hovered ? PINNED_HOVER_COLOR : PINNED_COLOR
                 : hovered ? UNPINNED_HOVER_COLOR : UNPINNED_COLOR;
-        graphics.drawString(font, star, x, y, color);
-        if (hovered && Minecraft.getInstance().screen != null) {
-            Minecraft.getInstance().screen.setTooltipForNextRenderPass(font.split(pinned ? UNPIN : PIN, 200));
+        GuiComponent.drawString(pose, font, star, x, y, color);
+        if (hovered) {
+            tooltip.accept(List.of(pinned ? UNPIN : PIN));
         }
     }
 

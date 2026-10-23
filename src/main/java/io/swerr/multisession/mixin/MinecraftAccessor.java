@@ -10,10 +10,10 @@ import net.minecraft.client.gui.components.toasts.ToastComponent;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.chat.ChatListener;
 import net.minecraft.client.multiplayer.chat.report.ReportingContext;
 import net.minecraft.client.server.IntegratedServer;
-import net.minecraft.client.telemetry.ClientTelemetryManager;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -47,6 +47,12 @@ public interface MinecraftAccessor {
 
     @Accessor("singleplayerServer")
     @Nullable IntegratedServer multisession$singleplayerServer();
+
+    @Accessor("currentServer")
+    @Nullable ServerData multisession$currentServer();
+
+    @Accessor("currentServer")
+    void multisession$setCurrentServer(@Nullable ServerData currentServer);
 
     @Accessor("singleplayerServer")
     void multisession$setSingleplayerServer(@Nullable IntegratedServer singleplayerServer);
@@ -91,13 +97,6 @@ public interface MinecraftAccessor {
     @Mutable
     @Accessor("playerSocialManager")
     void multisession$setPlayerSocialManager(PlayerSocialManager playerSocialManager);
-
-    @Accessor("telemetryManager")
-    ClientTelemetryManager multisession$telemetryManager();
-
-    @Mutable
-    @Accessor("telemetryManager")
-    void multisession$setTelemetryManager(ClientTelemetryManager telemetryManager);
 
     @Accessor("profileKeyPairManager")
     ProfileKeyPairManager multisession$profileKeyPairManager();

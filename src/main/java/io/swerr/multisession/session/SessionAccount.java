@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
-import net.minecraft.client.telemetry.ClientTelemetryManager;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 
 record SessionAccount(
@@ -16,7 +15,6 @@ record SessionAccount(
         PropertyMap profileProperties,
         UserApiService userApiService,
         PlayerSocialManager socialManager,
-        ClientTelemetryManager telemetry,
         ProfileKeyPairManager profileKeys) {
 
     static SessionAccount capture(Minecraft minecraft) {
@@ -27,7 +25,6 @@ record SessionAccount(
                 fields.multisession$profileProperties(),
                 fields.multisession$userApiService(),
                 fields.multisession$playerSocialManager(),
-                fields.multisession$telemetryManager(),
                 fields.multisession$profileKeyPairManager());
     }
 
@@ -38,7 +35,6 @@ record SessionAccount(
         fields.multisession$setProfileProperties(profileProperties);
         fields.multisession$setUserApiService(userApiService);
         fields.multisession$setPlayerSocialManager(socialManager);
-        fields.multisession$setTelemetryManager(telemetry);
         fields.multisession$setProfileKeyPairManager(profileKeys);
     }
 }

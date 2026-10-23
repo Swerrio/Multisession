@@ -3,7 +3,7 @@ package io.swerr.multisession.mixin;
 import com.mojang.blaze3d.platform.InputConstants;
 import io.swerr.multisession.client.ServerListPin;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
 import net.minecraft.client.multiplayer.ServerData;
@@ -38,13 +38,13 @@ public abstract class OnlineServerEntryMixin extends ServerSelectionList.Entry {
     private int multisession$nameY;
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void multisession$renderPin(GuiGraphics graphics, int index, int top, int left, int width, int height,
+    private void multisession$renderPin(PoseStack pose, int index, int top, int left, int width, int height,
             int mouseX, int mouseY, boolean hovered, float partialTick, CallbackInfo ci) {
         this.multisession$nameX = left + 35;
         this.multisession$nameY = top + 1;
         boolean selected = ((JoinMultiplayerScreenAccessor) this.screen).multisession$serverSelectionList().getSelected() == (Object) this;
-        ServerListPin.extract(graphics, this.minecraft.font, this.serverData, this.multisession$nameX, this.multisession$nameY,
-                mouseX, mouseY, hovered || selected);
+        ServerListPin.extract(pose, this.minecraft.font, this.serverData, this.multisession$nameX, this.multisession$nameY,
+                mouseX, mouseY, hovered || selected, this.screen::setToolTip);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)

@@ -10,6 +10,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.components.toasts.ToastComponent;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.chat.ChatListener;
 import net.minecraft.client.multiplayer.chat.report.ReportEnvironment;
 import net.minecraft.client.multiplayer.chat.report.ReportingContext;
@@ -31,6 +32,7 @@ final class SessionContext {
     @Nullable ClientPlayNetworkAddon playAddon;
     SessionAccount account;
     @Nullable IntegratedServer singleplayerServer;
+    @Nullable ServerData serverData;
     boolean localServer;
 
     private SessionContext() {
@@ -46,10 +48,11 @@ final class SessionContext {
         context.chatListener = minecraft.getChatListener();
         context.reporting = minecraft.getReportingContext();
         context.serverRenderDistance = ((OptionsAccessor) minecraft.options).multisession$serverRenderDistance();
-        context.packs = ((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$installedPacks();
+        context.packs = ((PackSourceAccess) minecraft.getClientPackSource()).multisession$installedPacks();
         context.playAddon = ClientNetworkingImpl.getClientPlayAddon();
         context.account = SessionAccount.capture(minecraft);
         context.singleplayerServer = ((MinecraftAccessor) minecraft).multisession$singleplayerServer();
+        context.serverData = ((MinecraftAccessor) minecraft).multisession$currentServer();
         context.localServer = ((MinecraftAccessor) minecraft).multisession$isLocalServer();
         return context;
     }
@@ -67,7 +70,7 @@ final class SessionContext {
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
         context.reporting = ReportingContext.create(ReportEnvironment.local(), ((MinecraftAccessor) minecraft).multisession$userApiService());
         context.serverRenderDistance = 0;
-        context.packs = ((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$newPacks();
+        context.packs = ((PackSourceAccess) minecraft.getClientPackSource()).multisession$newPacks();
         context.account = SessionAccount.capture(minecraft);
         return context;
     }
@@ -82,10 +85,11 @@ final class SessionContext {
         fields.multisession$setChatListener(chatListener);
         fields.multisession$setReportingContext(reporting);
         minecraft.options.setServerRenderDistance(serverRenderDistance);
-        ((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$installPacks(packs);
+        ((PackSourceAccess) minecraft.getClientPackSource()).multisession$installPacks(packs);
         ClientNetworkingImpl.setClientPlayAddon(playAddon);
         account.install(minecraft);
         fields.multisession$setSingleplayerServer(singleplayerServer);
+        fields.multisession$setCurrentServer(serverData);
         fields.multisession$setLocalServer(localServer);
     }
 }

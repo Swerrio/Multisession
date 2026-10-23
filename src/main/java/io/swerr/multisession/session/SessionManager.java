@@ -117,7 +117,7 @@ public final class SessionManager {
         SessionContext fresh = SessionContext.fresh(minecraft);
         fresh.install(minecraft);
         ((MinecraftAccessor) minecraft).multisession$updateLevelInEngines(null);
-        if (!((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$keepLoadedPacks(fresh.packs)) {
+        if (!((PackSourceAccess) minecraft.getClientPackSource()).multisession$keepLoadedPacks(fresh.packs)) {
             minecraft.reloadResourcePacks();
         }
         minecraft.setScreen(next);
@@ -157,7 +157,7 @@ public final class SessionManager {
             WorldEvents.announceLoaded(context.level);
         }
 
-        if (!((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$keepLoadedPacks(context.packs)) {
+        if (!((PackSourceAccess) minecraft.getClientPackSource()).multisession$keepLoadedPacks(context.packs)) {
             minecraft.reloadResourcePacks();
         }
 
@@ -287,8 +287,8 @@ public final class SessionManager {
         IntegratedServer server = session.context.singleplayerServer;
         if (server != null) {
             session.worldId = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName().toString();
-        } else if (listener.getServerData() != null) {
-            session.address = listener.getServerData().ip;
+        } else if (minecraft.getCurrentServer() != null) {
+            session.address = minecraft.getCurrentServer().ip;
         }
         PARKED.put(session.connection, session);
         if (server != null) {
@@ -331,7 +331,7 @@ public final class SessionManager {
         if (listener.getConnection().isMemoryConnection() && server != null) {
             return server.getWorldData().getLevelName();
         }
-        ServerData data = listener.getServerData();
+        ServerData data = Minecraft.getInstance().getCurrentServer();
         if (data != null && !data.name.isBlank()) {
             return data.name;
         }

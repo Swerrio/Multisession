@@ -62,7 +62,7 @@ public final class QuickJoin {
             }
         }
         ServerData data = serverData(minecraft, name, address);
-        ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data, false);
+        ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data);
     }
 
     public static @Nullable String activeAddress(Minecraft minecraft) {
@@ -70,7 +70,7 @@ public final class QuickJoin {
         if (connection == null || connection.getConnection().isMemoryConnection()) {
             return null;
         }
-        ServerData data = connection.getServerData();
+        ServerData data = minecraft.getCurrentServer();
         return data != null ? data.ip : null;
     }
 

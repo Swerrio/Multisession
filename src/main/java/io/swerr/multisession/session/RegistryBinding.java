@@ -9,7 +9,6 @@ import java.util.Objects;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.Registry;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
@@ -26,7 +25,7 @@ public final class RegistryBinding {
     public static void recordTags(Connection connection, Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> tags) {
         ConnectionTags record = (ConnectionTags) connection;
         tags.forEach((key, payload) -> {
-            if (BuiltInRegistries.REGISTRY.containsKey(key.location())) {
+            if (Registry.REGISTRY.containsKey(key.location())) {
                 record.multisession$tags().put(key, payload);
                 record.multisession$fingerprints().put(key, fingerprint(payload));
             }
@@ -41,7 +40,7 @@ public final class RegistryBinding {
         ConnectionTags record = (ConnectionTags) listener.getConnection();
         record.multisession$fingerprints().forEach((key, fingerprint) -> {
             if (!Objects.equals(BOUND_TAGS.get(key), fingerprint)) {
-                Registry<?> registry = BuiltInRegistries.REGISTRY.get(key.location());
+                Registry<?> registry = Registry.REGISTRY.get(key.location());
                 if (registry != null) {
                     applyTags(registry, record.multisession$tags().get(key));
                     BOUND_TAGS.put(key, fingerprint);

@@ -56,9 +56,7 @@ public class MultisessionClient implements ClientModInitializer {
                 if (!offered) {
                     return;
                 }
-                sessionsButton = Button.builder(Component.empty(), button -> client.setScreen(new SessionsScreen(screen)))
-                        .bounds(4, 4, 100, 20)
-                        .build();
+                sessionsButton = new Button(4, 4, 100, 20, Component.empty(), button -> client.setScreen(new SessionsScreen(screen)));
                 Screens.getButtons(screen).add(sessionsButton);
                 SESSIONS_BUTTONS.put(screen, sessionsButton);
             }
@@ -74,26 +72,26 @@ public class MultisessionClient implements ClientModInitializer {
     }
 
     private static void keepClear(Screen screen, AbstractWidget widget) {
-        widget.setX(4);
+        widget.x = 4;
         for (int moves = 0; moves < 8; moves++) {
             AbstractWidget blocker = blocker(screen, widget);
             if (blocker == null) {
                 return;
             }
-            int next = blocker.getX() + blocker.getWidth() + 4;
+            int next = blocker.x + blocker.getWidth() + 4;
             if (next + widget.getWidth() > screen.width) {
                 break;
             }
-            widget.setX(next);
+            widget.x = next;
         }
-        widget.setX(4);
+        widget.x = 4;
     }
 
     private static @Nullable AbstractWidget blocker(Screen screen, AbstractWidget widget) {
         for (GuiEventListener child : screen.children()) {
             if (child != widget && child instanceof AbstractWidget other && other.visible
-                    && other.getX() < widget.getX() + widget.getWidth() && widget.getX() < other.getX() + other.getWidth()
-                    && other.getY() < widget.getY() + widget.getHeight() && widget.getY() < other.getY() + other.getHeight()) {
+                    && other.x < widget.x + widget.getWidth() && widget.x < other.x + other.getWidth()
+                    && other.y < widget.y + widget.getHeight() && widget.y < other.y + other.getHeight()) {
                 return other;
             }
         }

@@ -33,9 +33,9 @@ public final class SessionWarp {
     private static final long NOT_STARTED = Long.MIN_VALUE;
     private static final float PEAK_FOV = 1.6F;
     private static final float MAX_FOV = 150.0F;
-    private static final SoundEvent LAUNCH_SOUND = SoundEvent.createVariableRangeEvent(
+    private static final SoundEvent LAUNCH_SOUND = new SoundEvent(
             new ResourceLocation(MultisessionClient.MOD_ID, "warp.launch"));
-    private static final SoundEvent ARRIVAL_SOUND = SoundEvent.createVariableRangeEvent(
+    private static final SoundEvent ARRIVAL_SOUND = new SoundEvent(
             new ResourceLocation(MultisessionClient.MOD_ID, "warp.arrival"));
 
     private static LongSupplier clock = System::nanoTime;
