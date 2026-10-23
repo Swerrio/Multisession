@@ -6,6 +6,7 @@ import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -60,6 +61,39 @@ public abstract class MinecraftMixin {
         ClientSession session = SessionManager.background();
         if (session != null) {
             cir.setReturnValue(session.camera());
+        }
+    }
+
+    @Inject(method = "getSingleplayerServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundSingleplayerServer(CallbackInfoReturnable<IntegratedServer> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.world());
+        }
+    }
+
+    @Inject(method = "isLocalServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundLocalServer(CallbackInfoReturnable<Boolean> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.isLocal());
+        }
+    }
+
+    @Inject(method = "hasSingleplayerServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundHasSingleplayerServer(CallbackInfoReturnable<Boolean> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.isLocal() && session.world() != null);
+        }
+    }
+
+    @Inject(method = "isMultiplayerServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundMultiplayerServer(CallbackInfoReturnable<Boolean> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            IntegratedServer server = session.world();
+            cir.setReturnValue(!session.isLocal() || server != null && server.isPublished());
         }
     }
 

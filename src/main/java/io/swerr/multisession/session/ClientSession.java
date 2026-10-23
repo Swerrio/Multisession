@@ -79,6 +79,10 @@ public final class ClientSession {
         return context.singleplayerServer;
     }
 
+    public boolean isLocal() {
+        return context.localServer;
+    }
+
     public boolean isInWorld() {
         return context.level != null && context.player != null && context.gameMode != null;
     }

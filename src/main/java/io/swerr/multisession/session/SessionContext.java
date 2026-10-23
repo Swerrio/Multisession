@@ -79,6 +79,10 @@ final class SessionContext {
     }
 
     void install(Minecraft minecraft) {
+        install(minecraft, true);
+    }
+
+    void install(Minecraft minecraft, boolean server) {
         minecraft.level = level;
         minecraft.player = player;
         minecraft.gameMode = gameMode;
@@ -93,7 +97,15 @@ final class SessionContext {
         ClientNetworkingImpl.setClientPlayAddon(playAddon);
         ClientNetworkingImpl.setClientConfigurationAddon(configurationAddon);
         account.install(minecraft);
-        ((MinecraftAccessor) minecraft).multisession$setSingleplayerServer(singleplayerServer);
-        ((MinecraftAccessor) minecraft).multisession$setLocalServer(localServer);
+        if (server) {
+            ((MinecraftAccessor) minecraft).multisession$setSingleplayerServer(singleplayerServer);
+            ((MinecraftAccessor) minecraft).multisession$setLocalServer(localServer);
+        }
+    }
+
+    SessionContext withServerOf(SessionContext other) {
+        singleplayerServer = other.singleplayerServer;
+        localServer = other.localServer;
+        return this;
     }
 }
