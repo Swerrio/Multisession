@@ -24,8 +24,6 @@
   "multisession.tab.address": "By address",
   "multisession.pin": "Pin to quick join",
   "multisession.unpin": "Remove from quick join",
-  "multisession.button.pin": "☆ To quick join",
-  "multisession.button.pinned": "★ In quick join",
   "multisession.quick.none": "No pinned servers yet. Pin one with ☆ on the Sessions tab, in the server list or on the By address tab.",
   "multisession.quick.open": "%s · open",
   "multisession.address.label": "Server address",
