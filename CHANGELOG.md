@@ -1,11 +1,5 @@
-## 1.0.0
+## 1.0.1
 
-The first release for Minecraft 26.2.
-
-* Several servers open in one game window at once, each kept running in the background
-* One singleplayer world alongside them, paused while you are in another session
-* Switch between sessions from the pause menu or with F6, with a warp jump effect and sound
-* Every session keeps its own chat, HUD, toasts, server resource pack and account
-* Quick join for pinned servers and joining by address
-* Settings for the effect, notifications and hidden server addresses
-* Minecraft 26.2, Fabric, client side only
+* Pin a server to quick join with the star next to its name in the server list. The pin button in the corner of the multiplayer screen is gone: it covered buttons of other mods, such as Proxy Server
+* The Sessions button moves aside when another mod already has a button in the top left corner
+* New icon
