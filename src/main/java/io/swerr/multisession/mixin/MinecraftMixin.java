@@ -80,6 +80,30 @@ public abstract class MinecraftMixin {
         }
     }
 
+    @Inject(method = "getSingleplayerServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundSingleplayerServer(CallbackInfoReturnable<IntegratedServer> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.world());
+        }
+    }
+
+    @Inject(method = "isLocalServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundLocalServer(CallbackInfoReturnable<Boolean> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.isLocal());
+        }
+    }
+
+    @Inject(method = "hasSingleplayerServer", at = @At("HEAD"), cancellable = true)
+    private void multisession$backgroundHasSingleplayerServer(CallbackInfoReturnable<Boolean> cir) {
+        ClientSession session = SessionManager.background();
+        if (session != null && ((Minecraft) (Object) this).isSameThread()) {
+            cir.setReturnValue(session.isLocal() && session.world() != null);
+        }
+    }
+
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void multisession$deferScreen(@Nullable Screen screen, CallbackInfo ci) {
         ClientSession session = SessionManager.background();

@@ -369,7 +369,7 @@ public final class SessionManager {
             active = SessionContext.capture(minecraft);
             activeIsLocal = active.localServer;
             background = session;
-            session.context.install(minecraft);
+            session.context.install(minecraft, false);
             minecraft.screen = session.pendingScreen();
         }
         minecraft.hitResult = null;
@@ -385,8 +385,8 @@ public final class SessionManager {
             session.connection.disconnect(session.disconnectReason);
         } finally {
             synchronized (FabricAddons.LOCK) {
-                session.context = SessionContext.capture(minecraft);
-                active.install(minecraft);
+                session.context = SessionContext.capture(minecraft).withServerOf(session.context);
+                active.install(minecraft, false);
                 minecraft.screen = activeScreen;
                 FabricAddons.endSwap();
             }
