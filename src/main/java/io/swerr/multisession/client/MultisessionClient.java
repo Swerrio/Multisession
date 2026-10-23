@@ -100,7 +100,7 @@ public class MultisessionClient implements ClientModInitializer {
 
     private static boolean offersSessions(Minecraft client, Screen screen) {
         if (screen instanceof PauseScreen) {
-            return SessionManager.canPark(client);
+            return SessionManager.canPark(client) || SessionManager.hasParked();
         }
         if (screen instanceof TitleScreen && MultisessionConfig.get(MultisessionConfig.Option.TITLE_BUTTON)) {
             return true;
