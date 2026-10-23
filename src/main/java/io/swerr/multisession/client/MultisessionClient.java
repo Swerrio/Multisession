@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
@@ -37,7 +37,7 @@ public class MultisessionClient implements ClientModInitializer {
     public void onInitializeClient() {
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 
-        nextSession = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+        nextSession = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "multisession.key.next",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_F6,
@@ -59,7 +59,7 @@ public class MultisessionClient implements ClientModInitializer {
                 sessionsButton = Button.builder(Component.empty(), button -> client.setScreen(new SessionsScreen(screen)))
                         .bounds(4, 4, 100, 20)
                         .build();
-                Screens.getWidgets(screen).add(sessionsButton);
+                Screens.getButtons(screen).add(sessionsButton);
                 SESSIONS_BUTTONS.put(screen, sessionsButton);
             }
             int sessions = sessionCount(client);

@@ -3,7 +3,7 @@ package io.swerr.multisession.mixin;
 import com.mojang.blaze3d.platform.InputConstants;
 import io.swerr.multisession.client.ServerListPin;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -31,8 +31,8 @@ public abstract class OnlineServerEntryMixin extends ServerSelectionList.Entry {
     @Final
     private ServerData serverData;
 
-    @Inject(method = "extractContent", at = @At("TAIL"))
-    private void multisession$extractPin(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float partialTick, CallbackInfo ci) {
+    @Inject(method = "renderContent", at = @At("TAIL"))
+    private void multisession$extractPin(GuiGraphics graphics, int mouseX, int mouseY, boolean hovered, float partialTick, CallbackInfo ci) {
         boolean selected = ((JoinMultiplayerScreenAccessor) this.screen).multisession$serverSelectionList().getSelected() == (Object) this;
         ServerListPin.extract(graphics, this.minecraft.font, this.serverData, getContentX() + 35, getContentY() + 1,
                 mouseX, mouseY, hovered || selected);

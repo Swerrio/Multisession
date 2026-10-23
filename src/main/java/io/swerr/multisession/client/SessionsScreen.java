@@ -4,7 +4,7 @@ import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
 import java.util.List;
 import java.util.function.Consumer;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -97,7 +97,7 @@ public class SessionsScreen extends Screen {
         if (this.tabBar == null) {
             return;
         }
-        this.tabBar.updateWidth(this.width);
+        this.tabBar.setWidth(this.width);
         this.tabBar.arrangeElements();
         int top = this.tabBar.getRectangle().bottom();
         this.tabManager.setTabArea(new ScreenRectangle(0, top, this.width, this.height - this.layout.getFooterHeight() - top));
@@ -126,15 +126,15 @@ public class SessionsScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-        super.extractRenderState(graphics, mouseX, mouseY, a);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float a) {
+        super.render(graphics, mouseX, mouseY, a);
         graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, this.height - this.layout.getFooterHeight(), 0.0F, 0.0F, this.width, 2, 32, 2);
     }
 
     @Override
-    protected void extractMenuBackground(GuiGraphicsExtractor graphics) {
+    protected void renderMenuBackground(GuiGraphics graphics) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, this.width, this.layout.getHeaderHeight(), 16, 16);
-        this.extractMenuBackground(graphics, 0, this.layout.getHeaderHeight(), this.width, this.height);
+        this.renderMenuBackground(graphics, 0, this.layout.getHeaderHeight(), this.width, this.height);
     }
 
     @Override

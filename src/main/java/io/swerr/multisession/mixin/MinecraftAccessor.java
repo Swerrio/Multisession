@@ -27,8 +27,8 @@ public interface MinecraftAccessor {
     @Invoker("updateLevelInEngines")
     void multisession$updateLevelInEngines(@Nullable ClientLevel level);
 
-    @Invoker("renderFrame")
-    void multisession$renderFrame(boolean advanceGameTime);
+    @Invoker("runTick")
+    void multisession$runTick(boolean advanceGameTime);
 
     @Mutable
     @Accessor("gui")

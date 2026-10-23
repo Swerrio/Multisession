@@ -20,8 +20,8 @@ import org.jspecify.annotations.Nullable;
 public final class WorldEvents {
 
     private static final Set<Event<?>> SILENCED_IN_BACKGROUND = Set.of(
-            ClientTickEvents.START_LEVEL_TICK,
-            ClientTickEvents.END_LEVEL_TICK,
+            ClientTickEvents.START_WORLD_TICK,
+            ClientTickEvents.END_WORLD_TICK,
             ClientChunkEvents.CHUNK_LOAD,
             ClientChunkEvents.CHUNK_UNLOAD,
             ClientEntityEvents.ENTITY_LOAD,

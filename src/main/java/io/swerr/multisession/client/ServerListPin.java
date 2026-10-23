@@ -2,7 +2,7 @@ package io.swerr.multisession.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -20,7 +20,7 @@ public final class ServerListPin {
     private ServerListPin() {
     }
 
-    public static void extract(GuiGraphicsExtractor graphics, Font font, ServerData server, int nameX, int y,
+    public static void extract(GuiGraphics graphics, Font font, ServerData server, int nameX, int y,
             int mouseX, int mouseY, boolean active) {
         boolean pinned = MultisessionConfig.isPinned(server.ip);
         if (!pinned && !active) {
@@ -32,7 +32,7 @@ public final class ServerListPin {
         int color = pinned
                 ? hovered ? PINNED_HOVER_COLOR : PINNED_COLOR
                 : hovered ? UNPINNED_HOVER_COLOR : UNPINNED_COLOR;
-        graphics.text(font, star, x, y, color);
+        graphics.drawString(font, star, x, y, color);
         if (hovered) {
             graphics.setTooltipForNextFrame(pinned ? UNPIN : PIN, mouseX, mouseY);
         }

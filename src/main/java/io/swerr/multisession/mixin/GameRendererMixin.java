@@ -2,6 +2,7 @@ package io.swerr.multisession.mixin;
 
 import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.SessionManager;
+import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -11,6 +12,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -23,6 +25,13 @@ public abstract class GameRendererMixin {
     private void multisession$muteBackgroundItemActivation(CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
+    private void multisession$switchEffectFov(Camera camera, float partialTick, boolean useFovSetting, CallbackInfoReturnable<Float> cir) {
+        if (useFovSetting) {
+            cir.setReturnValue(SessionWarp.fov(minecraft, cir.getReturnValueF()));
         }
     }
 

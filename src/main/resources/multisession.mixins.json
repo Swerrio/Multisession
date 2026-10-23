@@ -2,9 +2,8 @@
   "required": true,
   "minVersion": "0.8",
   "package": "io.swerr.multisession.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "client": [
-    "CameraMixin",
     "ClientChunkCacheStorageMixin",
     "ClientCommonPacketListenerImplAccessor",
     "ClientCommonPacketListenerImplMixin",

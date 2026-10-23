@@ -151,7 +151,6 @@ public final class SessionManager {
         if (context.player != null) {
             context.player.input = target.savedInput != null ? target.savedInput : new KeyboardInput(minecraft.options);
             RegistryBinding.bindTags(context.player.connection);
-            RegistryBinding.bindComponents(context.player.connection);
         }
         if (context.singleplayerServer != null) {
             PAUSED_SERVERS.remove(context.singleplayerServer);
@@ -331,7 +330,7 @@ public final class SessionManager {
     private static void waitForShutdown(Minecraft minecraft, IntegratedServer server) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
         while (!server.isShutdown() && System.nanoTime() < deadline) {
-            ((MinecraftAccessor) minecraft).multisession$renderFrame(false);
+            ((MinecraftAccessor) minecraft).multisession$runTick(false);
         }
         STOPPING_SERVERS.remove(server);
         PAUSED_SERVERS.remove(server);
@@ -395,7 +394,6 @@ public final class SessionManager {
             ClientPacketListener listener = minecraft.getConnection();
             if (!activeIsLocal && listener != null) {
                 RegistryBinding.bindTags(listener);
-                RegistryBinding.bindComponents(listener);
             }
         }
     }

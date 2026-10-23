@@ -29,7 +29,6 @@ public abstract class ClientConfigurationPacketListenerImplMixin {
     private void multisession$markRegistriesBound(ClientboundFinishConfigurationPacket packet, CallbackInfo ci) {
         if (!SessionManager.protectsGlobalRegistries()) {
             RegistryBinding.markTagsBound(this.multisession$connection());
-            RegistryBinding.markComponentsBound(this.multisession$connection());
         }
     }
 
