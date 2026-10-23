@@ -88,12 +88,12 @@ public final class WorldEvents {
     }
 
     private static Field chunkStorageField() {
-        try {
-            Field field = ClientChunkCache.class.getDeclaredField("storage");
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            throw new IllegalStateException("ClientChunkCache.storage is missing", e);
+        for (Field field : ClientChunkCache.class.getDeclaredFields()) {
+            if (ChunkTrackingReplay.class.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                return field;
+            }
         }
+        throw new IllegalStateException("ClientChunkCache.storage is missing");
     }
 }
