@@ -116,6 +116,7 @@ public final class SessionManager {
         ClientSession parked = park(minecraft);
         SessionContext fresh = SessionContext.fresh(minecraft);
         fresh.install(minecraft);
+        minecraft.setCameraEntity(null);
         ((MinecraftAccessor) minecraft).multisession$updateLevelInEngines(null);
         if (!((PackSourceAccess) minecraft.getClientPackSource()).multisession$keepLoadedPacks(fresh.packs)) {
             minecraft.reloadResourcePacks();
