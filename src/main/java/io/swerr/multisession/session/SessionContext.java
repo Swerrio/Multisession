@@ -1,14 +1,13 @@
 package io.swerr.multisession.session;
 
 import io.swerr.multisession.mixin.GuiAccessor;
-import io.swerr.multisession.mixin.HudAccessor;
 import io.swerr.multisession.mixin.MinecraftAccessor;
 import io.swerr.multisession.mixin.OptionsAccessor;
 import net.fabricmc.fabric.impl.networking.client.ClientConfigurationNetworkAddon;
 import net.fabricmc.fabric.impl.networking.client.ClientNetworkingImpl;
 import net.fabricmc.fabric.impl.networking.client.ClientPlayNetworkAddon;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
@@ -24,7 +23,7 @@ final class SessionContext {
     @Nullable ClientLevel level;
     @Nullable LocalPlayer player;
     @Nullable MultiPlayerGameMode gameMode;
-    Hud hud;
+    Gui gui;
     ToastManager toasts;
     ChatListener chatListener;
     ReportingContext reporting;
@@ -44,9 +43,9 @@ final class SessionContext {
         context.level = minecraft.level;
         context.player = minecraft.player;
         context.gameMode = minecraft.gameMode;
-        context.hud = minecraft.gui.hud;
-        context.toasts = minecraft.gui.toastManager();
-        context.chatListener = minecraft.gui.chatListener();
+        context.gui = minecraft.gui;
+        context.toasts = minecraft.getToastManager();
+        context.chatListener = minecraft.getChatListener();
         context.reporting = minecraft.getReportingContext();
         context.serverRenderDistance = ((OptionsAccessor) minecraft.options).multisession$serverRenderDistance();
         context.packs = ((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$installedPacks();
@@ -60,14 +59,12 @@ final class SessionContext {
 
     static SessionContext fresh(Minecraft minecraft) {
         SessionContext context = new SessionContext();
-        HudAccessor current = (HudAccessor) minecraft.gui.hud;
-        Hud hud = new Hud(minecraft);
-        HudAccessor created = (HudAccessor) hud;
-        created.multisession$setWaypointStyles(current.multisession$waypointStyles());
+        GuiAccessor current = (GuiAccessor) minecraft.gui;
+        Gui gui = new Gui(minecraft);
+        GuiAccessor created = (GuiAccessor) gui;
         created.multisession$setDebugOverlay(current.multisession$debugOverlay());
         created.multisession$setSubtitleOverlay(current.multisession$subtitleOverlay());
-        created.multisession$setHidden(minecraft.gui.hud.isHidden());
-        context.hud = hud;
+        context.gui = gui;
         context.toasts = new ToastManager(minecraft, minecraft.options);
         context.chatListener = new ChatListener(minecraft);
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
@@ -82,18 +79,18 @@ final class SessionContext {
         minecraft.level = level;
         minecraft.player = player;
         minecraft.gameMode = gameMode;
-        GuiAccessor gui = (GuiAccessor) minecraft.gui;
-        gui.multisession$setHud(hud);
-        gui.multisession$setToastManager(toasts);
-        gui.multisession$setChatListener(chatListener);
-        ((MinecraftAccessor) minecraft).multisession$setReportingContext(reporting);
+        MinecraftAccessor fields = (MinecraftAccessor) minecraft;
+        fields.multisession$setGui(gui);
+        fields.multisession$setToastManager(toasts);
+        fields.multisession$setChatListener(chatListener);
+        fields.multisession$setReportingContext(reporting);
         minecraft.options.setServerRenderDistance(serverRenderDistance);
         ((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$installPacks(packs);
         ClientNetworkingImpl.setClientConfigurationAddon(null);
         ClientNetworkingImpl.setClientPlayAddon(playAddon);
         ClientNetworkingImpl.setClientConfigurationAddon(configurationAddon);
         account.install(minecraft);
-        ((MinecraftAccessor) minecraft).multisession$setSingleplayerServer(singleplayerServer);
-        ((MinecraftAccessor) minecraft).multisession$setLocalServer(localServer);
+        fields.multisession$setSingleplayerServer(singleplayerServer);
+        fields.multisession$setLocalServer(localServer);
     }
 }

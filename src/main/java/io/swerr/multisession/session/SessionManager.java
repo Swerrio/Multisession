@@ -3,7 +3,6 @@ package io.swerr.multisession.session;
 import com.mojang.logging.LogUtils;
 import io.swerr.multisession.client.MultisessionConfig;
 import io.swerr.multisession.mixin.ClientCommonPacketListenerImplAccessor;
-import io.swerr.multisession.mixin.HudAccessor;
 import io.swerr.multisession.mixin.MinecraftAccessor;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
@@ -23,7 +21,6 @@ import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.screens.social.RemoteFriendListUpdateHandler;
 import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
@@ -105,7 +102,7 @@ public final class SessionManager {
     }
 
     public static boolean canSwitch(Minecraft minecraft) {
-        if (inBackground() || minecraft.gui.screen() instanceof ConnectScreen) {
+        if (inBackground() || minecraft.screen instanceof ConnectScreen) {
             return false;
         }
         return minecraft.getConnection() == null ? minecraft.level == null : canPark(minecraft);
@@ -128,7 +125,7 @@ public final class SessionManager {
         if (!((PackSourceAccess) minecraft.getDownloadedPackSource()).multisession$keepLoadedPacks(fresh.packs)) {
             minecraft.reloadResourcePacks();
         }
-        minecraft.gui.setScreen(next);
+        minecraft.setScreen(next);
         return true;
     }
 
@@ -146,15 +143,9 @@ public final class SessionManager {
         PARKED.remove(target.connection);
 
         SessionContext context = target.context;
-        ((HudAccessor) context.hud).multisession$setHidden(outgoing.hud.isHidden());
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
         context.install(minecraft);
         outgoing.packs.completePendingReload();
-        outgoing.account.handOverFriendList(context.account);
-        RemoteFriendListUpdateHandler outgoingFriendList = outgoing.account.friendList();
-        if (!outgoingParked && outgoingFriendList != context.account.friendList() && !usesFriendList(outgoingFriendList)) {
-            outgoingFriendList.close();
-        }
         minecraft.hitResult = null;
         minecraft.crosshairPickEntity = null;
         if (context.player != null) {
@@ -168,7 +159,6 @@ public final class SessionManager {
 
         ((MinecraftAccessor) minecraft).multisession$updateLevelInEngines(context.level);
         if (context.level != null) {
-            WorldEvents.loadedChunks(context.level).multisession$replayLoadedChunks();
             Entity camera = target.camera();
             minecraft.setCameraEntity(camera != null && !camera.isRemoved() ? camera : context.player);
             WorldEvents.announceLoaded(context.level);
@@ -180,7 +170,7 @@ public final class SessionManager {
 
         Screen screen = target.pendingScreen();
         target.setPendingScreen(null);
-        minecraft.gui.setScreen(screen instanceof LevelLoadingScreen ? null : screen);
+        minecraft.setScreen(screen instanceof LevelLoadingScreen ? null : screen);
     }
 
     public static void close(Minecraft minecraft, ClientSession session) {
@@ -269,10 +259,10 @@ public final class SessionManager {
             }
             LOGGER.info("Saving and closing background world {} before another world starts", session.name());
             close(minecraft, session);
-            minecraft.gui.setScreen(new GenericMessageScreen(Gui.SAVING_LEVEL));
+            minecraft.setScreen(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
             waitForShutdown(minecraft, server);
             SystemToast.add(
-                    minecraft.gui.toastManager(),
+                    minecraft.getToastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                     Component.translatable("multisession.toast.world_closed", session.name()),
                     Component.translatable("multisession.toast.world_closed.reason"));
@@ -282,13 +272,9 @@ public final class SessionManager {
     public static void shutdown() {
         List<ClientSession> sessions = List.copyOf(PARKED.values());
         PARKED.clear();
-        RemoteFriendListUpdateHandler activeFriendList = ((MinecraftAccessor) Minecraft.getInstance()).multisession$friendList();
         for (ClientSession session : sessions) {
             session.connection.disconnect(Component.translatable("disconnect.quitting"));
             stopWorld(session);
-            if (session.context.account.friendList() != activeFriendList) {
-                session.context.account.friendList().close();
-            }
         }
 
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
@@ -308,15 +294,6 @@ public final class SessionManager {
             }
         }
         return null;
-    }
-
-    public static boolean usesFriendList(RemoteFriendListUpdateHandler friendList) {
-        for (ClientSession session : PARKED.values()) {
-            if (session.context.account.friendList() == friendList) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static ClientSession park(Minecraft minecraft) {
@@ -354,7 +331,7 @@ public final class SessionManager {
     private static void waitForShutdown(Minecraft minecraft, IntegratedServer server) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
         while (!server.isShutdown() && System.nanoTime() < deadline) {
-            minecraft.renderFrame(false);
+            ((MinecraftAccessor) minecraft).multisession$renderFrame(false);
         }
         STOPPING_SERVERS.remove(server);
         PAUSED_SERVERS.remove(server);
@@ -384,6 +361,7 @@ public final class SessionManager {
     private static void runInBackground(Minecraft minecraft, ClientSession session, Runnable work) {
         HitResult hitResult = minecraft.hitResult;
         Entity crosshairPickEntity = minecraft.crosshairPickEntity;
+        Screen activeScreen = minecraft.screen;
         SessionContext active;
         synchronized (FabricAddons.LOCK) {
             FabricAddons.beginSwap();
@@ -391,6 +369,7 @@ public final class SessionManager {
             activeIsLocal = active.localServer;
             background = session;
             session.context.install(minecraft);
+            minecraft.screen = session.pendingScreen();
         }
         minecraft.hitResult = null;
         minecraft.crosshairPickEntity = null;
@@ -407,6 +386,7 @@ public final class SessionManager {
             synchronized (FabricAddons.LOCK) {
                 session.context = SessionContext.capture(minecraft);
                 active.install(minecraft);
+                minecraft.screen = activeScreen;
                 FabricAddons.endSwap();
             }
             minecraft.hitResult = hitResult;
@@ -430,14 +410,10 @@ public final class SessionManager {
 
             iterator.remove();
             stopWorld(session);
-            RemoteFriendListUpdateHandler friendList = session.context.account.friendList();
-            if (friendList != ((MinecraftAccessor) minecraft).multisession$friendList() && !usesFriendList(friendList)) {
-                friendList.close();
-            }
             LOGGER.info("Background session {} ({}) disconnected: {}", session.name(), session.nickname(), session.disconnectReason.getString());
             if (!session.closedByUser && MultisessionConfig.get(MultisessionConfig.Option.DISCONNECT_TOASTS)) {
                 SystemToast.add(
-                        minecraft.gui.toastManager(),
+                        minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                         Component.translatable("multisession.toast.disconnected", session.label()),
                         session.disconnectReason);

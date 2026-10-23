@@ -135,8 +135,8 @@ public final class ClientSession {
             player.connection.send(ServerboundClientTickEndPacket.INSTANCE);
         }
 
-        phase("chat", () -> minecraft.gui.chatListener().tick());
-        phase("hud", () -> minecraft.gui.hud.tick(false));
+        phase("chat", () -> minecraft.getChatListener().tick());
+        phase("hud", () -> minecraft.gui.tick(false));
     }
 
     private void phase(String phase, Runnable work) {

@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.MultiLineTextWidget;
 import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.tabs.MenuTabBar;
+import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
 import net.minecraft.client.gui.layouts.FrameLayout;
@@ -56,7 +56,7 @@ public class SessionsScreen extends Screen {
     private final Screen parent;
     private HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(widget -> this.addRenderableWidget(widget), widget -> this.removeWidget(widget));
-    private @Nullable MenuTabBar tabBar;
+    private @Nullable TabNavigationBar tabBar;
     private List<ClientSession> shownSessions = List.of();
     private List<MultisessionConfig.Server> shownPins = List.of();
     private @Nullable String address;
@@ -78,7 +78,7 @@ public class SessionsScreen extends Screen {
         shownPins = MultisessionConfig.pinned();
 
         this.layout = new HeaderAndFooterLayout(this);
-        this.tabBar = MenuTabBar.builder(this.tabManager, this.width)
+        this.tabBar = TabNavigationBar.builder(this.tabManager, this.width)
                 .addTabs(
                         new ScrollTab(SESSIONS_TAB, sessionsContent()),
                         new ScrollTab(QUICK_TAB, quickContent()),
@@ -97,7 +97,8 @@ public class SessionsScreen extends Screen {
         if (this.tabBar == null) {
             return;
         }
-        this.tabBar.arrangeElements(this.width);
+        this.tabBar.updateWidth(this.width);
+        this.tabBar.arrangeElements();
         int top = this.tabBar.getRectangle().bottom();
         this.tabManager.setTabArea(new ScreenRectangle(0, top, this.width, this.height - this.layout.getFooterHeight() - top));
         this.layout.setHeaderHeight(top);
@@ -139,7 +140,7 @@ public class SessionsScreen extends Screen {
     @Override
     public void onClose() {
         rememberTab();
-        this.minecraft.gui.setScreen(parent);
+        this.minecraft.setScreen(parent);
     }
 
     @Override
@@ -321,12 +322,12 @@ public class SessionsScreen extends Screen {
             this.rebuildWidgets();
             return;
         }
-        this.minecraft.gui.setScreen(new ConfirmScreen(
+        this.minecraft.setScreen(new ConfirmScreen(
                 confirmed -> {
                     if (confirmed) {
                         SessionManager.close(this.minecraft, session);
                     }
-                    this.minecraft.gui.setScreen(this);
+                    this.minecraft.setScreen(this);
                 },
                 Component.translatable("multisession.close.title", session.label()),
                 Component.translatable("multisession.close.message")));
@@ -362,7 +363,7 @@ public class SessionsScreen extends Screen {
         if (this.minecraft.getConnection() != null) {
             SessionManager.startNewSession(this.minecraft, next);
         } else {
-            this.minecraft.gui.setScreen(next);
+            this.minecraft.setScreen(next);
         }
     }
 
@@ -418,11 +419,6 @@ public class SessionsScreen extends Screen {
             scroll.setMaxHeight(padded.height());
             scroll.arrangeElements();
             FrameLayout.alignInRectangle(scroll, padded, 0.5F, 0.0F);
-        }
-
-        @Override
-        public Layout getLayout() {
-            return scroll;
         }
     }
 }

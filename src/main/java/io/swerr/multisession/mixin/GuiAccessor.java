@@ -1,9 +1,8 @@
 package io.swerr.multisession.mixin;
 
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.Hud;
-import net.minecraft.client.gui.components.toasts.ToastManager;
-import net.minecraft.client.multiplayer.chat.ChatListener;
+import net.minecraft.client.gui.components.DebugScreenOverlay;
+import net.minecraft.client.gui.components.SubtitleOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -11,15 +10,17 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Gui.class)
 public interface GuiAccessor {
 
-    @Mutable
-    @Accessor("hud")
-    void multisession$setHud(Hud hud);
+    @Accessor("debugOverlay")
+    DebugScreenOverlay multisession$debugOverlay();
 
     @Mutable
-    @Accessor("toastManager")
-    void multisession$setToastManager(ToastManager toastManager);
+    @Accessor("debugOverlay")
+    void multisession$setDebugOverlay(DebugScreenOverlay debugOverlay);
+
+    @Accessor("subtitleOverlay")
+    SubtitleOverlay multisession$subtitleOverlay();
 
     @Mutable
-    @Accessor("chatListener")
-    void multisession$setChatListener(ChatListener chatListener);
+    @Accessor("subtitleOverlay")
+    void multisession$setSubtitleOverlay(SubtitleOverlay subtitleOverlay);
 }

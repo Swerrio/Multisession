@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
-import net.minecraft.client.gui.screens.social.RemoteFriendListUpdateHandler;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
 import net.minecraft.client.telemetry.ClientTelemetryManager;
 import net.minecraft.server.Services;
@@ -20,7 +19,6 @@ record SessionAccount(
         UserApiService userApiService,
         CompletableFuture<UserApiService.UserProperties> userProperties,
         PlayerSocialManager socialManager,
-        RemoteFriendListUpdateHandler friendList,
         ClientTelemetryManager telemetry,
         ProfileKeyPairManager profileKeys) {
 
@@ -33,7 +31,6 @@ record SessionAccount(
                 fields.multisession$userApiService(),
                 fields.multisession$userPropertiesFuture(),
                 fields.multisession$playerSocialManager(),
-                fields.multisession$friendList(),
                 fields.multisession$telemetryManager(),
                 fields.multisession$profileKeyPairManager());
     }
@@ -46,18 +43,7 @@ record SessionAccount(
         fields.multisession$setUserApiService(userApiService);
         fields.multisession$setUserPropertiesFuture(userProperties);
         fields.multisession$setPlayerSocialManager(socialManager);
-        fields.multisession$setFriendList(friendList);
         fields.multisession$setTelemetryManager(telemetry);
         fields.multisession$setProfileKeyPairManager(profileKeys);
-    }
-
-    void handOverFriendList(SessionAccount next) {
-        if (friendList == next.friendList) {
-            return;
-        }
-        friendList.stop();
-        if (next.socialManager.isFriendListEnabled()) {
-            next.friendList.start();
-        }
     }
 }

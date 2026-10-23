@@ -30,12 +30,12 @@ public final class QuickJoin {
         if (parkedSession(minecraft, address) != null || minecraft.getConnection() != null && MultisessionConfig.get(MultisessionConfig.Option.NEW_SESSION)) {
             return SessionManager.canSwitch(minecraft) && (minecraft.getConnection() == null || SessionManager.canPark(minecraft));
         }
-        return !(minecraft.gui.screen() instanceof ConnectScreen);
+        return !(minecraft.screen instanceof ConnectScreen);
     }
 
     public static void join(Minecraft minecraft, String name, String address) {
         if (isActive(minecraft, address)) {
-            minecraft.gui.setScreen(null);
+            minecraft.setScreen(null);
             return;
         }
         ClientSession parked = parkedSession(minecraft, address);

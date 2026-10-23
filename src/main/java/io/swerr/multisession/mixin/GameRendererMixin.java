@@ -1,6 +1,5 @@
 package io.swerr.multisession.mixin;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.DeltaTracker;
@@ -20,10 +19,6 @@ public abstract class GameRendererMixin {
     @Final
     private Minecraft minecraft;
 
-    @Shadow
-    @Final
-    private RenderTarget mainRenderTarget;
-
     @Inject(method = "displayItemActivation", at = @At("HEAD"), cancellable = true)
     private void multisession$muteBackgroundItemActivation(CallbackInfo ci) {
         if (SessionManager.inBackground()) {
@@ -33,6 +28,6 @@ public abstract class GameRendererMixin {
 
     @Inject(method = "render", at = @At("TAIL"))
     private void multisession$renderSwitchEffect(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
-        SessionWarp.render(minecraft, mainRenderTarget);
+        SessionWarp.render(minecraft, minecraft.getMainRenderTarget());
     }
 }

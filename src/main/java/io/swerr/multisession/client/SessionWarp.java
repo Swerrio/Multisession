@@ -1,10 +1,8 @@
 package io.swerr.multisession.client;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -18,7 +16,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.logging.LogUtils;
 import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
-import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import net.minecraft.client.Minecraft;
@@ -49,10 +47,8 @@ public final class SessionWarp {
             .withLocation(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "pipeline/warp"))
             .withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
             .withFragmentShader(Identifier.fromNamespaceAndPath(MultisessionClient.MOD_ID, "post/warp"))
-            .withBindGroupLayout(BindGroupLayout.builder()
-                    .withSampler("InSampler")
-                    .withUniform("WarpConfig", UniformType.UNIFORM_BUFFER)
-                    .build())
+            .withSampler("InSampler")
+            .withUniform("WarpConfig", UniformType.UNIFORM_BUFFER)
             .build();
 
     private static LongSupplier clock = System::nanoTime;
@@ -105,7 +101,7 @@ public final class SessionWarp {
         lastFrame = phaseStart;
         travel = 0.0F;
         launch(0.0F);
-        minecraft.gui.setScreen(null);
+        minecraft.setScreen(null);
         playSound(minecraft, LAUNCH_SOUND);
     }
 
@@ -172,7 +168,7 @@ public final class SessionWarp {
         int width = color.getWidth(0);
         int height = color.getHeight(0);
         if (sceneCopy == null) {
-            sceneCopy = new TextureTarget("Multisession warp", width, height, false, color.getFormat());
+            sceneCopy = new TextureTarget("Multisession warp", width, height, false);
         } else if (sceneCopy.width != width || sceneCopy.height != height) {
             sceneCopy.resize(width, height);
         }
@@ -182,7 +178,7 @@ public final class SessionWarp {
 
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         encoder.copyTextureToTexture(color, sceneCopy.getColorTexture(), 0, 0, 0, 0, 0, width, height);
-        try (GpuBufferSlice.MappedView view = uniforms.currentBuffer().map(false, true)) {
+        try (GpuBuffer.MappedView view = encoder.mapBuffer(uniforms.currentBuffer(), false, true)) {
             Std140Builder.intoBuffer(view.data())
                     .putVec2(width, height)
                     .putFloat(travel)
@@ -191,12 +187,12 @@ public final class SessionWarp {
                     .putFloat(minecraft.options.screenEffectScale().get().floatValue())
                     .putFloat(phase == Phase.ARRIVAL ? 1.0F : 0.0F);
         }
-        try (RenderPass pass = encoder.createRenderPass(() -> "Multisession warp", colorView, Optional.empty())) {
+        try (RenderPass pass = encoder.createRenderPass(() -> "Multisession warp", colorView, OptionalInt.empty())) {
             pass.setPipeline(PIPELINE);
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("WarpConfig", uniforms.currentBuffer());
             pass.bindTexture("InSampler", sceneCopy.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-            pass.draw(3, 1, 0, 0);
+            pass.draw(0, 3);
         }
         uniforms.rotate();
     }

@@ -5,10 +5,12 @@ import com.mojang.authlib.yggdrasil.ProfileResult;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
-import net.minecraft.client.gui.screens.social.RemoteFriendListUpdateHandler;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
+import net.minecraft.client.multiplayer.chat.ChatListener;
 import net.minecraft.client.multiplayer.chat.report.ReportingContext;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.telemetry.ClientTelemetryManager;
@@ -24,6 +26,21 @@ public interface MinecraftAccessor {
 
     @Invoker("updateLevelInEngines")
     void multisession$updateLevelInEngines(@Nullable ClientLevel level);
+
+    @Invoker("renderFrame")
+    void multisession$renderFrame(boolean advanceGameTime);
+
+    @Mutable
+    @Accessor("gui")
+    void multisession$setGui(Gui gui);
+
+    @Mutable
+    @Accessor("toastManager")
+    void multisession$setToastManager(ToastManager toastManager);
+
+    @Mutable
+    @Accessor("chatListener")
+    void multisession$setChatListener(ChatListener chatListener);
 
     @Accessor("reportingContext")
     void multisession$setReportingContext(ReportingContext reportingContext);
@@ -81,13 +98,6 @@ public interface MinecraftAccessor {
     @Mutable
     @Accessor("playerSocialManager")
     void multisession$setPlayerSocialManager(PlayerSocialManager playerSocialManager);
-
-    @Accessor("remoteFriendListUpdateHandler")
-    RemoteFriendListUpdateHandler multisession$friendList();
-
-    @Mutable
-    @Accessor("remoteFriendListUpdateHandler")
-    void multisession$setFriendList(RemoteFriendListUpdateHandler friendList);
 
     @Accessor("telemetryManager")
     ClientTelemetryManager multisession$telemetryManager();

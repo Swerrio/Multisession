@@ -56,7 +56,7 @@ public class MultisessionClient implements ClientModInitializer {
                 if (!offered) {
                     return;
                 }
-                sessionsButton = Button.builder(Component.empty(), button -> client.gui.setScreen(new SessionsScreen(screen)))
+                sessionsButton = Button.builder(Component.empty(), button -> client.setScreen(new SessionsScreen(screen)))
                         .bounds(4, 4, 100, 20)
                         .build();
                 Screens.getWidgets(screen).add(sessionsButton);
