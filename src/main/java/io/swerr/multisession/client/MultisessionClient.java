@@ -1,7 +1,6 @@
 package io.swerr.multisession.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import io.swerr.multisession.mixin.JoinMultiplayerScreenAccessor;
 import io.swerr.multisession.session.SessionManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -10,16 +9,15 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
@@ -50,40 +48,45 @@ public class MultisessionClient implements ClientModInitializer {
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
             if (offersSessions(client, screen)) {
                 int sessions = sessionCount(client);
-                Screens.getWidgets(screen).add(Button.builder(
+                Button sessionsButton = Button.builder(
                                 sessions > 0
                                         ? Component.translatable("multisession.button.sessions", sessions)
                                         : Component.translatable("multisession.screen.title"),
                                 button -> client.gui.setScreen(new SessionsScreen(screen)))
                         .bounds(4, 4, 100, 20)
-                        .build());
-            }
-            if (screen instanceof JoinMultiplayerScreen multiplayer) {
-                Button pin = Button.builder(Component.empty(), button -> {
-                            ServerData selected = selectedServer(multiplayer);
-                            if (selected != null) {
-                                MultisessionConfig.togglePin(selected.name, selected.ip);
-                            }
-                        })
-                        .bounds(width - 124, 4, 120, 20)
                         .build();
-                Screens.getWidgets(screen).add(pin);
-                updatePinButton(pin, selectedServer(multiplayer));
-                ScreenEvents.afterTick(screen).register(tickedScreen -> updatePinButton(pin, selectedServer(multiplayer)));
+                Screens.getWidgets(screen).add(sessionsButton);
+                keepClear(screen, sessionsButton);
+                ScreenEvents.afterTick(screen).register(tickedScreen -> keepClear(tickedScreen, sessionsButton));
             }
         });
     }
 
-    private static @Nullable ServerData selectedServer(JoinMultiplayerScreen screen) {
-        ServerSelectionList list = ((JoinMultiplayerScreenAccessor) screen).multisession$serverSelectionList();
-        return list != null && list.getSelected() instanceof ServerSelectionList.OnlineServerEntry entry ? entry.getServerData() : null;
+    private static void keepClear(Screen screen, AbstractWidget widget) {
+        widget.setX(4);
+        for (int moves = 0; moves < 8; moves++) {
+            AbstractWidget blocker = blocker(screen, widget);
+            if (blocker == null) {
+                return;
+            }
+            int next = blocker.getRight() + 4;
+            if (next + widget.getWidth() > screen.width) {
+                break;
+            }
+            widget.setX(next);
+        }
+        widget.setX(4);
     }
 
-    private static void updatePinButton(Button button, @Nullable ServerData selected) {
-        boolean pinned = selected != null && MultisessionConfig.isPinned(selected.ip);
-        button.active = selected != null;
-        button.setMessage(Component.translatable(pinned ? "multisession.button.pinned" : "multisession.button.pin"));
-        button.setTooltip(Tooltip.create(Component.translatable(pinned ? "multisession.unpin" : "multisession.pin")));
+    private static @Nullable AbstractWidget blocker(Screen screen, AbstractWidget widget) {
+        for (GuiEventListener child : screen.children()) {
+            if (child != widget && child instanceof AbstractWidget other && other.visible
+                    && other.getX() < widget.getRight() && widget.getX() < other.getRight()
+                    && other.getY() < widget.getBottom() && widget.getY() < other.getBottom()) {
+                return other;
+            }
+        }
+        return null;
     }
 
     private static boolean offersSessions(Minecraft client, Screen screen) {

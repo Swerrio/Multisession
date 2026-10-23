@@ -24,8 +24,6 @@
   "multisession.tab.address": "По адресу",
   "multisession.pin": "Закрепить в быстром входе",
   "multisession.unpin": "Убрать из быстрого входа",
-  "multisession.button.pin": "☆ В быстрый вход",
-  "multisession.button.pinned": "★ В быстром входе",
   "multisession.quick.none": "Закреплённых серверов пока нет. Закрепите сервер кнопкой ☆ во вкладке «Сессии», в списке серверов или во вкладке «По адресу».",
   "multisession.quick.open": "%s · открыт",
   "multisession.address.label": "Адрес сервера",

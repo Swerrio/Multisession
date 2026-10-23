@@ -28,6 +28,7 @@
     "MinecraftAccessor",
     "MinecraftMixin",
     "MusicManagerMixin",
+    "OnlineServerEntryMixin",
     "OptionsAccessor",
     "PacketProcessorMixin",
     "ParticleEngineMixin",
