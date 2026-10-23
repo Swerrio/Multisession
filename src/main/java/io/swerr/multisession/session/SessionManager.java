@@ -3,6 +3,7 @@ package io.swerr.multisession.session;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import io.swerr.multisession.client.MultisessionConfig;
+import io.swerr.multisession.client.SessionCards;
 import io.swerr.multisession.mixin.ClientCommonPacketListenerImplAccessor;
 import io.swerr.multisession.mixin.HudAccessor;
 import io.swerr.multisession.mixin.MinecraftAccessor;
@@ -46,7 +47,10 @@ public final class SessionManager {
     private static final Component CLOSED = Component.translatable("multisession.disconnect.closed");
     private static final Component LOST = Component.translatable("multisession.disconnect.lost");
 
+    private static final int MAX_LOST = 8;
+
     private static final Map<Connection, ClientSession> PARKED = new LinkedHashMap<>();
+    private static final List<LostSession> LOST_SESSIONS = new ArrayList<>();
     private static final Set<IntegratedServer> PAUSED_SERVERS = ConcurrentHashMap.newKeySet();
     private static final List<IntegratedServer> STOPPING_SERVERS = new ArrayList<>();
     private static volatile @Nullable ClientSession background;
@@ -79,6 +83,29 @@ public final class SessionManager {
         return List.copyOf(PARKED.values());
     }
 
+    public static List<LostSession> lost() {
+        return List.copyOf(LOST_SESSIONS);
+    }
+
+    public static void dismiss(Minecraft minecraft, LostSession lost) {
+        if (LOST_SESSIONS.remove(lost)) {
+            closeUnusedFriendList(minecraft, lost.account.friendList());
+        }
+    }
+
+    public static void restoreAccount(Minecraft minecraft, LostSession lost) {
+        if (!LOST_SESSIONS.remove(lost)) {
+            return;
+        }
+        SessionAccount current = SessionAccount.capture(minecraft);
+        if (current.user().getName().equals(lost.account.user().getName())) {
+            closeUnusedFriendList(minecraft, lost.account.friendList());
+            return;
+        }
+        current.handOverFriendList(lost.account);
+        lost.account.install(minecraft);
+    }
+
     public static List<PackState> parkedPacks() {
         return PARKED.values().stream().map(session -> session.context.packs).toList();
     }
@@ -103,6 +130,11 @@ public final class SessionManager {
         }
         IntegratedServer server = minecraft.getSingleplayerServer();
         return server != null && !server.isPublished();
+    }
+
+    public static boolean isPublishedWorld(Minecraft minecraft) {
+        IntegratedServer server = minecraft.getSingleplayerServer();
+        return minecraft.isLocalServer() && server != null && server.isPublished();
     }
 
     public static boolean canSwitch(Minecraft minecraft) {
@@ -133,10 +165,6 @@ public final class SessionManager {
         return true;
     }
 
-    public static @Nullable ClientSession next() {
-        return PARKED.isEmpty() ? null : PARKED.values().iterator().next();
-    }
-
     public static void activate(Minecraft minecraft, ClientSession target) {
         if (!PARKED.containsKey(target.connection) || !canSwitch(minecraft)) {
             return;
@@ -146,6 +174,7 @@ public final class SessionManager {
         SessionContext outgoing = outgoingParked ? park(minecraft).context : SessionContext.capture(minecraft);
         PARKED.remove(target.connection);
 
+        SessionCards.onActivated(target.connection);
         SessionContext context = target.context;
         ((HudAccessor) context.hud).multisession$setHidden(outgoing.hud.isHidden());
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
@@ -291,6 +320,12 @@ public final class SessionManager {
                 session.context.account.friendList().close();
             }
         }
+        for (LostSession lost : List.copyOf(LOST_SESSIONS)) {
+            LOST_SESSIONS.remove(lost);
+            if (lost.account.friendList() != activeFriendList) {
+                lost.account.friendList().close();
+            }
+        }
 
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
         for (IntegratedServer server : STOPPING_SERVERS) {
@@ -317,7 +352,18 @@ public final class SessionManager {
                 return true;
             }
         }
+        for (LostSession lost : LOST_SESSIONS) {
+            if (lost.account.friendList() == friendList) {
+                return true;
+            }
+        }
         return false;
+    }
+
+    private static void closeUnusedFriendList(Minecraft minecraft, RemoteFriendListUpdateHandler friendList) {
+        if (friendList != ((MinecraftAccessor) minecraft).multisession$friendList() && !usesFriendList(friendList)) {
+            friendList.close();
+        }
     }
 
     private static ClientSession park(Minecraft minecraft) {
@@ -335,6 +381,7 @@ public final class SessionManager {
             session.address = listener.getServerData().ip;
         }
         PARKED.put(session.connection, session);
+        SessionCards.onParked(session.connection);
         if (server != null) {
             pauseWorld(server);
         }
@@ -432,9 +479,13 @@ public final class SessionManager {
 
             iterator.remove();
             stopWorld(session);
-            RemoteFriendListUpdateHandler friendList = session.context.account.friendList();
-            if (friendList != ((MinecraftAccessor) minecraft).multisession$friendList() && !usesFriendList(friendList)) {
-                friendList.close();
+            if (session.closedByUser) {
+                closeUnusedFriendList(minecraft, session.context.account.friendList());
+            } else {
+                LOST_SESSIONS.add(new LostSession(session, session.disconnectReason));
+                while (LOST_SESSIONS.size() > MAX_LOST) {
+                    dismiss(minecraft, LOST_SESSIONS.getFirst());
+                }
             }
             LOGGER.info("Background session {} ({}) disconnected: {}", session.name(), session.nickname(), session.disconnectReason.getString());
             if (!session.closedByUser && MultisessionConfig.get(MultisessionConfig.Option.DISCONNECT_TOASTS)) {

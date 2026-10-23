@@ -16,5 +16,23 @@
         "preload": true
       }
     ]
+  },
+  "card.charge": {
+    "subtitle": "multisession.subtitles.card.charge",
+    "sounds": [
+      {
+        "name": "multisession:card/charge",
+        "preload": true
+      }
+    ]
+  },
+  "card.close": {
+    "subtitle": "multisession.subtitles.card.close",
+    "sounds": [
+      {
+        "name": "multisession:card/close",
+        "preload": true
+      }
+    ]
   }
 }

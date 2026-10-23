@@ -13,6 +13,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
@@ -60,6 +61,22 @@ public final class ClientSession {
 
     public @Nullable String address() {
         return address;
+    }
+
+    public Connection connection() {
+        return connection;
+    }
+
+    public @Nullable LocalPlayer player() {
+        return context.player;
+    }
+
+    public @Nullable ClientLevel level() {
+        return context.level;
+    }
+
+    public @Nullable IntegratedServer world() {
+        return context.singleplayerServer;
     }
 
     public boolean isInWorld() {

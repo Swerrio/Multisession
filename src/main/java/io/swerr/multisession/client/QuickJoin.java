@@ -1,6 +1,7 @@
 package io.swerr.multisession.client;
 
 import io.swerr.multisession.session.ClientSession;
+import io.swerr.multisession.session.LostSession;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -55,6 +56,24 @@ public final class QuickJoin {
             }
         }
         ServerData data = serverData(minecraft, name, address);
+        ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data, false, null);
+    }
+
+    public static boolean canReconnect(Minecraft minecraft) {
+        return SessionManager.canSwitch(minecraft) && (minecraft.getConnection() == null || SessionManager.canPark(minecraft));
+    }
+
+    public static void reconnect(Minecraft minecraft, LostSession lost) {
+        String address = lost.address();
+        if (address == null || !canReconnect(minecraft)) {
+            return;
+        }
+        Screen parent = new JoinMultiplayerScreen(new TitleScreen());
+        if (minecraft.getConnection() != null && !SessionManager.startNewSession(minecraft, parent)) {
+            return;
+        }
+        SessionManager.restoreAccount(minecraft, lost);
+        ServerData data = serverData(minecraft, lost.name(), address);
         ConnectScreen.startConnecting(parent, minecraft, ServerAddress.parseString(data.ip), data, false, null);
     }
 
