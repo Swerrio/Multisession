@@ -1,15 +1,13 @@
-#version 330
+#version 150
 
 uniform sampler2D InSampler;
 
-layout(std140) uniform WarpConfig {
-    vec2 OutSize;
-    float Travel;
-    float Warp;
-    float Flash;
-    float Distortion;
-    float Arrival;
-};
+uniform vec2 OutSize;
+uniform float Travel;
+uniform float Warp;
+uniform float Flash;
+uniform float Distortion;
+uniform float Arrival;
 
 in vec2 texCoord;
 

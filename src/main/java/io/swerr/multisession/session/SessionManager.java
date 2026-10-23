@@ -299,7 +299,7 @@ public final class SessionManager {
         ClientPacketListener listener = minecraft.getConnection();
         WorldEvents.announceUnloaded(minecraft.level);
         ClientSession session = new ClientSession(
-                listener.getConnection(), displayName(listener), listener.getLocalGameProfile().name(), SessionContext.capture(minecraft));
+                listener.getConnection(), displayName(listener), listener.getLocalGameProfile().getName(), SessionContext.capture(minecraft));
         session.setCamera(minecraft.getCameraEntity());
         session.savedInput = minecraft.player.input;
         minecraft.player.input = new ClientInput();
@@ -361,6 +361,7 @@ public final class SessionManager {
         HitResult hitResult = minecraft.hitResult;
         Entity crosshairPickEntity = minecraft.crosshairPickEntity;
         Screen activeScreen = minecraft.screen;
+        Entity activeCamera = minecraft.cameraEntity;
         SessionContext active;
         synchronized (FabricAddons.LOCK) {
             FabricAddons.beginSwap();
@@ -369,6 +370,7 @@ public final class SessionManager {
             background = session;
             session.context.install(minecraft);
             minecraft.screen = session.pendingScreen();
+            minecraft.cameraEntity = session.camera();
         }
         minecraft.hitResult = null;
         minecraft.crosshairPickEntity = null;
@@ -384,8 +386,10 @@ public final class SessionManager {
         } finally {
             synchronized (FabricAddons.LOCK) {
                 session.context = SessionContext.capture(minecraft);
+                session.setCamera(minecraft.cameraEntity);
                 active.install(minecraft);
                 minecraft.screen = activeScreen;
+                minecraft.cameraEntity = activeCamera;
                 FabricAddons.endSwap();
             }
             minecraft.hitResult = hitResult;

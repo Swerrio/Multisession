@@ -4,6 +4,7 @@ import io.swerr.multisession.client.SessionWarp;
 import io.swerr.multisession.session.ClientSession;
 import io.swerr.multisession.session.SessionManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.server.IntegratedServer;
@@ -42,15 +43,15 @@ public abstract class MinecraftMixin {
     }
 
     @Inject(method = "setLevel", at = @At("HEAD"), cancellable = true)
-    private void multisession$setBackgroundLevel(ClientLevel level, CallbackInfo ci) {
+    private void multisession$setBackgroundLevel(ClientLevel level, ReceivingLevelScreen.Reason reason, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             ((Minecraft) (Object) this).level = level;
             ci.cancel();
         }
     }
 
-    @Inject(method = "updateLevelInEngines(Lnet/minecraft/client/multiplayer/ClientLevel;Z)V", at = @At("HEAD"), cancellable = true)
-    private void multisession$keepEnginesOnActiveLevel(ClientLevel level, boolean stopSound, CallbackInfo ci) {
+    @Inject(method = "updateLevelInEngines(Lnet/minecraft/client/multiplayer/ClientLevel;)V", at = @At("HEAD"), cancellable = true)
+    private void multisession$keepEnginesOnActiveLevel(ClientLevel level, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             ci.cancel();
         }
@@ -61,6 +62,7 @@ public abstract class MinecraftMixin {
         ClientSession session = SessionManager.background();
         if (session != null) {
             session.setCamera(cameraEntity);
+            ((Minecraft) (Object) this).cameraEntity = cameraEntity;
             ci.cancel();
         }
     }
@@ -90,15 +92,6 @@ public abstract class MinecraftMixin {
         }
     }
 
-    @Inject(method = "setScreenAndShow", at = @At("HEAD"), cancellable = true)
-    private void multisession$deferScreenAndShow(Screen screen, CallbackInfo ci) {
-        ClientSession session = SessionManager.background();
-        if (session != null) {
-            session.setPendingScreen(screen);
-            ci.cancel();
-        }
-    }
-
     @Inject(method = "clearClientLevel", at = @At("HEAD"), cancellable = true)
     private void multisession$reconfigureInBackground(Screen screen, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
@@ -107,8 +100,8 @@ public abstract class MinecraftMixin {
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;ZZ)V", at = @At("HEAD"), cancellable = true)
-    private void multisession$disconnectInBackground(Screen screen, boolean keepResourcePacks, boolean stopSound, CallbackInfo ci) {
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V", at = @At("HEAD"), cancellable = true)
+    private void multisession$disconnectInBackground(Screen screen, boolean keepResourcePacks, CallbackInfo ci) {
         if (SessionManager.inBackground()) {
             SessionManager.onBackgroundDisconnect();
             ci.cancel();

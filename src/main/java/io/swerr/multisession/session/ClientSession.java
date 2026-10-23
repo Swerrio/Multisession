@@ -2,7 +2,6 @@ package io.swerr.multisession.session;
 
 import com.mojang.logging.LogUtils;
 import io.swerr.multisession.client.MultisessionConfig;
-import io.swerr.multisession.mixin.ListenerAndPacketAccessor;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
@@ -27,7 +26,7 @@ public final class ClientSession {
     final Connection connection;
     private final String name;
     private final String nickname;
-    private final Queue<ListenerAndPacketAccessor> deferredPackets = new ArrayDeque<>();
+    private final Queue<DeferredPacket> deferredPackets = new ArrayDeque<>();
     private final Set<String> reportedFailures = new HashSet<>();
 
     SessionContext context;
@@ -82,14 +81,14 @@ public final class ClientSession {
         this.pendingScreen = screen;
     }
 
-    public void defer(ListenerAndPacketAccessor task) {
+    public void defer(DeferredPacket task) {
         deferredPackets.add(task);
     }
 
     void tick(Minecraft minecraft) {
-        ListenerAndPacketAccessor task;
+        DeferredPacket task;
         while ((task = deferredPackets.poll()) != null) {
-            task.multisession$handle();
+            task.handle();
         }
 
         if (disconnectReason != null) {
@@ -129,7 +128,6 @@ public final class ClientSession {
             }
 
             phase("entities", level::tickEntities);
-            phase("block entities", level::tickBlockEntities);
             phase("level", () -> level.tick(() -> true));
             phase("light", level::pollLightUpdates);
             player.connection.send(ServerboundClientTickEndPacket.INSTANCE);

@@ -9,12 +9,12 @@ import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
 import net.minecraft.client.telemetry.ClientTelemetryManager;
-import net.minecraft.server.Services;
+import com.mojang.authlib.minecraft.MinecraftSessionService;
 import org.jspecify.annotations.Nullable;
 
 record SessionAccount(
         User user,
-        Services services,
+        MinecraftSessionService sessionService,
         CompletableFuture<@Nullable ProfileResult> profile,
         UserApiService userApiService,
         CompletableFuture<UserApiService.UserProperties> userProperties,
@@ -26,7 +26,7 @@ record SessionAccount(
         MinecraftAccessor fields = (MinecraftAccessor) minecraft;
         return new SessionAccount(
                 fields.multisession$user(),
-                fields.multisession$services(),
+                fields.multisession$sessionService(),
                 fields.multisession$profileFuture(),
                 fields.multisession$userApiService(),
                 fields.multisession$userPropertiesFuture(),
@@ -38,7 +38,7 @@ record SessionAccount(
     void install(Minecraft minecraft) {
         MinecraftAccessor fields = (MinecraftAccessor) minecraft;
         fields.multisession$setUser(user);
-        fields.multisession$setServices(services);
+        fields.multisession$setSessionService(sessionService);
         fields.multisession$setProfileFuture(profile);
         fields.multisession$setUserApiService(userApiService);
         fields.multisession$setUserPropertiesFuture(userProperties);

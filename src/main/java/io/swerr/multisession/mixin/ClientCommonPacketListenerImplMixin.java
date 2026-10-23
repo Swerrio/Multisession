@@ -38,7 +38,7 @@ public abstract class ClientCommonPacketListenerImplMixin {
             method = "handleTransfer",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/PacketProcessor;)V",
+                    target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/util/thread/BlockableEventLoop;)V",
                     shift = At.Shift.AFTER),
             cancellable = true)
     private void multisession$refuseBackgroundTransfer(ClientboundTransferPacket packet, CallbackInfo ci) {

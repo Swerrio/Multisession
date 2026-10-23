@@ -17,7 +17,7 @@ public abstract class ClientPacketListenerMixin {
             method = "handleUpdateTags",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/PacketProcessor;)V",
+                    target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/util/thread/BlockableEventLoop;)V",
                     shift = At.Shift.AFTER))
     private void multisession$recordTags(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
         RegistryBinding.recordTags(((ClientPacketListener) (Object) this).getConnection(), packet.getTags());

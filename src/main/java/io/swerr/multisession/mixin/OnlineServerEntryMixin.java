@@ -6,11 +6,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.multiplayer.ServerSelectionList;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ServerData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -31,17 +31,26 @@ public abstract class OnlineServerEntryMixin extends ServerSelectionList.Entry {
     @Final
     private ServerData serverData;
 
-    @Inject(method = "renderContent", at = @At("TAIL"))
-    private void multisession$extractPin(GuiGraphics graphics, int mouseX, int mouseY, boolean hovered, float partialTick, CallbackInfo ci) {
+    @Unique
+    private int multisession$nameX;
+
+    @Unique
+    private int multisession$nameY;
+
+    @Inject(method = "render", at = @At("TAIL"))
+    private void multisession$renderPin(GuiGraphics graphics, int index, int top, int left, int width, int height,
+            int mouseX, int mouseY, boolean hovered, float partialTick, CallbackInfo ci) {
+        this.multisession$nameX = left + 35;
+        this.multisession$nameY = top + 1;
         boolean selected = ((JoinMultiplayerScreenAccessor) this.screen).multisession$serverSelectionList().getSelected() == (Object) this;
-        ServerListPin.extract(graphics, this.minecraft.font, this.serverData, getContentX() + 35, getContentY() + 1,
+        ServerListPin.extract(graphics, this.minecraft.font, this.serverData, this.multisession$nameX, this.multisession$nameY,
                 mouseX, mouseY, hovered || selected);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void multisession$togglePin(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT
-                && ServerListPin.click(this.minecraft.font, this.serverData, getContentX() + 35, getContentY() + 1, event.x(), event.y())) {
+    private void multisession$togglePin(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (button == InputConstants.MOUSE_BUTTON_LEFT
+                && ServerListPin.click(this.minecraft.font, this.serverData, this.multisession$nameX, this.multisession$nameY, mouseX, mouseY)) {
             cir.setReturnValue(true);
         }
     }

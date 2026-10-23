@@ -1,0 +1,15 @@
+{
+    "vertex": "minecraft:core/blit_screen",
+    "fragment": "multisession:core/warp",
+    "samplers": [
+        { "name": "InSampler" }
+    ],
+    "uniforms": [
+        { "name": "OutSize",    "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "Travel",     "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Warp",       "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Flash",      "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Distortion", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Arrival",    "type": "float", "count": 1, "values": [ 0.0 ] }
+    ]
+}

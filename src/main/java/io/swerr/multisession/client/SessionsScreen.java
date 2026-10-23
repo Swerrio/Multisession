@@ -10,7 +10,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineTextWidget;
-import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.TabNavigationBar;
@@ -28,11 +27,11 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
-import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.gui.navigation.CommonInputs;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -57,6 +56,7 @@ public class SessionsScreen extends Screen {
     private HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final TabManager tabManager = new TabManager(widget -> this.addRenderableWidget(widget), widget -> this.removeWidget(widget));
     private @Nullable TabNavigationBar tabBar;
+    private List<Tab> tabs = List.of();
     private List<ClientSession> shownSessions = List.of();
     private List<MultisessionConfig.Server> shownPins = List.of();
     private @Nullable String address;
@@ -78,12 +78,13 @@ public class SessionsScreen extends Screen {
         shownPins = MultisessionConfig.pinned();
 
         this.layout = new HeaderAndFooterLayout(this);
+        this.tabs = List.of(
+                new ScrollTab(SESSIONS_TAB, sessionsContent()),
+                new ScrollTab(QUICK_TAB, quickContent()),
+                new ScrollTab(ADDRESS_TAB, addressContent()),
+                new ScrollTab(SETTINGS_TAB, settingsContent()));
         this.tabBar = TabNavigationBar.builder(this.tabManager, this.width)
-                .addTabs(
-                        new ScrollTab(SESSIONS_TAB, sessionsContent()),
-                        new ScrollTab(QUICK_TAB, quickContent()),
-                        new ScrollTab(ADDRESS_TAB, addressContent()),
-                        new ScrollTab(SETTINGS_TAB, settingsContent()))
+                .addTabs(this.tabs.toArray(Tab[]::new))
                 .build();
         this.addRenderableWidget(this.tabBar);
         this.layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose()).width(200).build());
@@ -114,26 +115,26 @@ public class SessionsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (this.tabBar != null && this.tabBar.keyPressed(event)) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.tabBar != null && this.tabBar.keyPressed(keyCode)) {
             return true;
         }
-        if (event.isConfirmation() && this.addressBox != null && this.addressBox.isFocused() && this.connectButton != null && this.connectButton.active) {
+        if (CommonInputs.selected(keyCode) && this.addressBox != null && this.addressBox.isFocused() && this.connectButton != null && this.connectButton.active) {
             this.connectToAddress();
             return true;
         }
-        return super.keyPressed(event);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float a) {
         super.render(graphics, mouseX, mouseY, a);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, this.height - this.layout.getFooterHeight(), 0.0F, 0.0F, this.width, 2, 32, 2);
+        graphics.blit(RenderType::guiTextured, Screen.FOOTER_SEPARATOR, 0, this.height - this.layout.getFooterHeight(), 0.0F, 0.0F, this.width, 2, 32, 2);
     }
 
     @Override
     protected void renderMenuBackground(GuiGraphics graphics) {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, this.width, this.layout.getHeaderHeight(), 16, 16);
+        graphics.blit(RenderType::guiTextured, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, this.width, this.layout.getHeaderHeight(), 16, 16);
         this.renderMenuBackground(graphics, 0, this.layout.getHeaderHeight(), this.width, this.height);
     }
 
@@ -244,7 +245,7 @@ public class SessionsScreen extends Screen {
         this.addressBox = content.addChild(new EditBox(this.font, WIDTH, SMALL, Component.translatable("multisession.address.label")));
         this.addressBox.setMaxLength(256);
         if (MultisessionConfig.hidesAddresses()) {
-            this.addressBox.addFormatter((text, offset) -> FormattedCharSequence.forward("*".repeat(text.length()), Style.EMPTY));
+            this.addressBox.setFormatter((text, offset) -> FormattedCharSequence.forward("*".repeat(text.length()), Style.EMPTY));
         }
         this.addressBox.setValue(this.address);
         this.addressBox.setResponder(value -> {
@@ -308,7 +309,8 @@ public class SessionsScreen extends Screen {
 
     private CycleButton<Boolean> toggle(String name, boolean current, Component on, Component off, Consumer<Boolean> change) {
         String key = "multisession.option." + name;
-        return CycleButton.booleanBuilder(on, off, current)
+        return CycleButton.booleanBuilder(on, off)
+                .withInitialValue(current)
                 .withTooltip(value -> Tooltip.create(Component.translatable(key + ".tooltip")))
                 .create(0, 0, WIDTH, SMALL, Component.translatable(key), (button, value) -> {
                     change.accept(value);
@@ -352,7 +354,7 @@ public class SessionsScreen extends Screen {
 
     private void rememberTab() {
         if (this.tabBar != null) {
-            int index = this.tabBar.getTabs().indexOf(this.tabManager.getCurrentTab());
+            int index = this.tabs.indexOf(this.tabManager.getCurrentTab());
             if (index >= 0) {
                 lastTab = index;
             }
@@ -383,19 +385,18 @@ public class SessionsScreen extends Screen {
             String remote = String.valueOf(connection.getConnection().getRemoteAddress());
             name = MultisessionConfig.displayName(remote, remote);
         }
-        Component session = Component.translatable("multisession.session.label", name, connection.getLocalGameProfile().name());
+        Component session = Component.translatable("multisession.session.label", name, connection.getLocalGameProfile().getName());
         return Component.translatable("multisession.screen.current", session);
     }
 
     private final class ScrollTab implements Tab {
 
         private final Component title;
-        private final ScrollableLayout scroll;
+        private final Layout content;
 
         private ScrollTab(Component title, Layout content) {
             this.title = title;
-            content.arrangeElements();
-            this.scroll = new ScrollableLayout(SessionsScreen.this.minecraft, content, 100);
+            this.content = content;
         }
 
         @Override
@@ -404,21 +405,15 @@ public class SessionsScreen extends Screen {
         }
 
         @Override
-        public Component getTabExtraNarration() {
-            return Component.empty();
-        }
-
-        @Override
         public void visitChildren(Consumer<AbstractWidget> consumer) {
-            scroll.visitWidgets(consumer);
+            content.visitWidgets(consumer);
         }
 
         @Override
         public void doLayout(ScreenRectangle area) {
             ScreenRectangle padded = new ScreenRectangle(area.left(), area.top() + 10, area.width(), Math.max(area.height() - 20, 20));
-            scroll.setMaxHeight(padded.height());
-            scroll.arrangeElements();
-            FrameLayout.alignInRectangle(scroll, padded, 0.5F, 0.0F);
+            content.arrangeElements();
+            FrameLayout.alignInRectangle(content, padded, 0.5F, 0.0F);
         }
     }
 }

@@ -27,6 +27,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    compileOnly "org.jspecify:jspecify:1.0.0"
 
     if (project.hasProperty("testMods")) {
         modRuntimeOnly fileTree(dir: project.property("testMods"), include: "*.jar", exclude: ["multisession-*", "fabric-api-*", "CrashAssistant-*"])

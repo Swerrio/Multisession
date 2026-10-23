@@ -39,7 +39,7 @@ public final class RegistryBinding {
         ConnectionTags record = (ConnectionTags) listener.getConnection();
         record.multisession$fingerprints().forEach((key, fingerprint) -> {
             if (!Objects.equals(BOUND_TAGS.get(key), fingerprint)) {
-                Registry<?> registry = BuiltInRegistries.REGISTRY.getValue(key.identifier());
+                Registry<?> registry = BuiltInRegistries.REGISTRY.getValue(key.location());
                 if (registry != null) {
                     applyTags(registry, record.multisession$tags().get(key));
                     BOUND_TAGS.put(key, fingerprint);

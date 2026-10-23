@@ -14,7 +14,7 @@ import net.minecraft.client.multiplayer.chat.ChatListener;
 import net.minecraft.client.multiplayer.chat.report.ReportingContext;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.telemetry.ClientTelemetryManager;
-import net.minecraft.server.Services;
+import com.mojang.authlib.minecraft.MinecraftSessionService;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -71,12 +71,12 @@ public interface MinecraftAccessor {
     @Accessor("user")
     void multisession$setUser(User user);
 
-    @Accessor("services")
-    Services multisession$services();
+    @Accessor("minecraftSessionService")
+    MinecraftSessionService multisession$sessionService();
 
     @Mutable
-    @Accessor("services")
-    void multisession$setServices(Services services);
+    @Accessor("minecraftSessionService")
+    void multisession$setSessionService(MinecraftSessionService sessionService);
 
     @Accessor("profileFuture")
     CompletableFuture<@Nullable ProfileResult> multisession$profileFuture();

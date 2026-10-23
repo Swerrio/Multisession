@@ -65,7 +65,7 @@ final class SessionContext {
         created.multisession$setDebugOverlay(current.multisession$debugOverlay());
         created.multisession$setSubtitleOverlay(current.multisession$subtitleOverlay());
         context.gui = gui;
-        context.toasts = new ToastManager(minecraft, minecraft.options);
+        context.toasts = new ToastManager(minecraft);
         context.chatListener = new ChatListener(minecraft);
         context.chatListener.setMessageDelay(minecraft.options.chatDelay().get());
         context.reporting = ReportingContext.create(ReportEnvironment.local(), ((MinecraftAccessor) minecraft).multisession$userApiService());

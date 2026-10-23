@@ -7,11 +7,12 @@ import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 
 public final class QuickJoin {
@@ -51,7 +52,13 @@ public final class QuickJoin {
                     return;
                 }
             } else {
-                minecraft.disconnectFromWorld(ClientLevel.DEFAULT_QUIT_MESSAGE);
+                boolean local = minecraft.isLocalServer();
+                minecraft.level.disconnect();
+                if (local) {
+                    minecraft.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+                } else {
+                    minecraft.disconnect();
+                }
             }
         }
         ServerData data = serverData(minecraft, name, address);
@@ -70,7 +77,7 @@ public final class QuickJoin {
     private static boolean isActive(Minecraft minecraft, String address) {
         String active = activeAddress(minecraft);
         return active != null && MultisessionConfig.sameAddress(active, address)
-                && minecraft.getConnection().getLocalGameProfile().name().equals(minecraft.getUser().getName());
+                && minecraft.getConnection().getLocalGameProfile().getName().equals(minecraft.getUser().getName());
     }
 
     private static @Nullable ClientSession parkedSession(Minecraft minecraft, String address) {

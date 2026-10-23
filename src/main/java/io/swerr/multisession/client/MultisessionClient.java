@@ -21,7 +21,6 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -35,13 +34,11 @@ public class MultisessionClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
-
         nextSession = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "multisession.key.next",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_F6,
-                category));
+                "key.category.multisession.main"));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (nextSession.consumeClick()) {
