@@ -2,6 +2,8 @@ package io.swerr.multisession.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import io.swerr.multisession.session.SessionManager;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -26,6 +28,8 @@ public class MultisessionClient implements ClientModInitializer {
 
     public static final String MOD_ID = "multisession";
 
+    private static final Map<Screen, Button> SESSIONS_BUTTONS = new WeakHashMap<>();
+
     private static KeyMapping nextSession;
 
     @Override
@@ -45,19 +49,26 @@ public class MultisessionClient implements ClientModInitializer {
         });
 
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
-            if (offersSessions(client, screen)) {
-                int sessions = sessionCount(client);
-                Button sessionsButton = Button.builder(
-                                sessions > 0
-                                        ? Component.translatable("multisession.button.sessions", sessions)
-                                        : Component.translatable("multisession.screen.title"),
-                                button -> client.gui.setScreen(new SessionsScreen(screen)))
+            boolean offered = offersSessions(client, screen);
+            Button sessionsButton = SESSIONS_BUTTONS.get(screen);
+            if (sessionsButton == null || !screen.children().contains(sessionsButton)) {
+                if (!offered) {
+                    return;
+                }
+                sessionsButton = Button.builder(Component.empty(), button -> client.gui.setScreen(new SessionsScreen(screen)))
                         .bounds(4, 4, 100, 20)
                         .build();
                 Screens.getWidgets(screen).add(sessionsButton);
-                keepClear(screen, sessionsButton);
-                ScreenEvents.afterTick(screen).register(tickedScreen -> keepClear(tickedScreen, sessionsButton));
+                SESSIONS_BUTTONS.put(screen, sessionsButton);
             }
+            int sessions = sessionCount(client);
+            sessionsButton.setMessage(sessions > 0
+                    ? Component.translatable("multisession.button.sessions", sessions)
+                    : Component.translatable("multisession.screen.title"));
+            sessionsButton.visible = offered;
+            Button shown = sessionsButton;
+            keepClear(screen, shown);
+            ScreenEvents.afterTick(screen).register(tickedScreen -> keepClear(tickedScreen, shown));
         });
     }
 
