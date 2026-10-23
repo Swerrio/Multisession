@@ -350,7 +350,7 @@ public final class SessionManager {
             active = SessionContext.capture(minecraft);
             activeIsLocal = active.localServer;
             background = session;
-            session.context.install(minecraft);
+            session.context.install(minecraft, false);
             minecraft.screen = session.pendingScreen();
             minecraft.cameraEntity = session.camera();
         }
@@ -367,9 +367,9 @@ public final class SessionManager {
             session.connection.disconnect(session.disconnectReason);
         } finally {
             synchronized (FabricAddons.LOCK) {
-                session.context = SessionContext.capture(minecraft);
+                session.context = SessionContext.capture(minecraft).withServerOf(session.context);
                 session.setCamera(minecraft.cameraEntity);
-                active.install(minecraft);
+                active.install(minecraft, false);
                 minecraft.screen = activeScreen;
                 minecraft.cameraEntity = activeCamera;
                 FabricAddons.endSwap();
